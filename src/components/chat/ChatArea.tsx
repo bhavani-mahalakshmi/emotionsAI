@@ -1,0 +1,109 @@
+
+"use client";
+
+import { useEffect, useRef } from 'react';
+import { useConversations } from "@/context/ConversationsContext";
+import MessageBubble from "./MessageBubble";
+import MessageInput from "./MessageInput";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Bot, Sparkles, ThumbsUp } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
+
+export default function ChatArea() {
+  const { getActiveConversation, isLoadingAiResponse, suggestedTopics, fetchSuggestedTopics, addMessage, activeConversationId } = useConversations();
+  const activeConversation = getActiveConversation();
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!activeConversationId && suggestedTopics.length === 0) {
+        fetchSuggestedTopics();
+    }
+  }, [activeConversationId, fetchSuggestedTopics, suggestedTopics.length]);
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [activeConversation?.messages, isLoadingAiResponse]);
+
+  const handleTopicClick = (topic: string) => {
+    if (activeConversationId) {
+      addMessage(activeConversationId, topic);
+    }
+  };
+  
+  if (!activeConversation) {
+    return (
+      <div className="flex flex-col items-center justify-center h-full p-8 text-center bg-background">
+        <Bot className="h-16 w-16 text-primary mb-6" />
+        <h2 className="text-2xl font-semibold text-foreground mb-2">Welcome to Emotion Insights</h2>
+        <p className="text-muted-foreground mb-6 max-w-md">
+          Start a new chat to explore your feelings, or select an existing conversation from the sidebar.
+        </p>
+        {suggestedTopics.length > 0 && (
+             <Card className="w-full max-w-md shadow-lg">
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2 text-lg"><Sparkles className="h-5 w-5 text-accent"/>Suggested Starters</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                    {suggestedTopics.map((topic, index) => (
+                        <Button key={index} variant="outline" className="w-full justify-start text-left" onClick={() => alert("Please start a new chat first to use this topic.")}>
+                            {topic}
+                        </Button>
+                    ))}
+                </CardContent>
+            </Card>
+        )}
+        {isLoadingAiResponse && suggestedTopics.length === 0 && (
+            <div className="w-full max-w-md space-y-2 mt-4">
+                <Skeleton className="h-10 w-full" />
+                <Skeleton className="h-10 w-full" />
+                <Skeleton className="h-10 w-full" />
+            </div>
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col h-full bg-background shadow-inner">
+      <ScrollArea className="flex-1 p-4 sm:p-6 space-y-4">
+        {activeConversation.messages.length === 0 && suggestedTopics.length > 0 && (
+          <div className="mb-6">
+            <Card className="w-full max-w-2xl mx-auto shadow-lg">
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2 text-lg"><ThumbsUp className="h-5 w-5 text-primary"/>How are you feeling today?</CardTitle>
+                </CardHeader>
+                <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                    {suggestedTopics.map((topic, index) => (
+                        <Button key={index} variant="outline" className="w-full justify-start text-left h-auto py-2" onClick={() => handleTopicClick(topic)}>
+                            {topic}
+                        </Button>
+                    ))}
+                </CardContent>
+            </Card>
+          </div>
+        )}
+        {activeConversation.messages.map((msg) => (
+          <MessageBubble key={msg.id} message={msg} />
+        ))}
+        {isLoadingAiResponse && activeConversation.messages[activeConversation.messages.length -1]?.role === 'user' && (
+           <div className="flex items-end space-x-2 animate-pulse mb-2">
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground">
+                <Bot size={18} />
+            </div>
+            <div className="flex flex-col space-y-1">
+                <div className="inline-block rounded-lg rounded-bl-none bg-muted p-3 shadow-sm">
+                    <div className="h-4 w-20 rounded bg-muted-foreground/30"></div>
+                </div>
+            </div>
+        </div>
+        )}
+        <div ref={messagesEndRef} />
+      </ScrollArea>
+      <div className="p-4 border-t border-border bg-background sticky bottom-0">
+        <MessageInput conversationId={activeConversation.id} />
+      </div>
+    </div>
+  );
+}
