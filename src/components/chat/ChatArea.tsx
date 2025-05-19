@@ -47,7 +47,12 @@ export default function ChatArea() {
                 </CardHeader>
                 <CardContent className="space-y-2">
                     {suggestedTopics.map((topic, index) => (
-                        <Button key={index} variant="outline" className="w-full justify-start text-left h-auto py-2" onClick={() => alert("Please start a new chat first to use this topic.")}>
+                        <Button 
+                            key={index} 
+                            variant="outline" 
+                            className="w-full justify-start text-left h-auto py-2 whitespace-normal" 
+                            onClick={() => alert("Please start a new chat first to use this topic.")}
+                        >
                             {topic}
                         </Button>
                     ))}
@@ -76,7 +81,12 @@ export default function ChatArea() {
                 </CardHeader>
                 <CardContent className="space-y-2">
                     {suggestedTopics.map((topic, index) => (
-                        <Button key={index} variant="outline" className="w-full justify-start text-left h-auto py-2" onClick={() => handleTopicClick(topic)}>
+                        <Button 
+                            key={index} 
+                            variant="outline" 
+                            className="w-full justify-start text-left h-auto py-2 whitespace-normal" 
+                            onClick={() => handleTopicClick(topic)}
+                        >
                             {topic}
                         </Button>
                     ))}
