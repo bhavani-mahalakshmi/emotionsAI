@@ -1,7 +1,3 @@
-# Firebase Studio - Emotion Insights App
-
-This is a NextJS starter in Firebase Studio, enhanced to create an "Emotion Insights" chat application.
-
 ## Core Logic
 
 The application allows users to engage in conversations with an AI assistant. The primary features include:
@@ -45,4 +41,4 @@ To get started, take a look at `src/app/page.tsx` which initializes the main app
 
 Copyright © 2025 Bhavani Mahalakshmi Gowri Sankar. All rights reserved.
 
-Connect with me on [LinkedIn](https://www.linkedin.com/in/your-profile-url-here/)
+Connect with me on [LinkedIn](https://www.linkedin.com/in/bhavani-mahalakshmi-gowri-sankar-6b6a54119/)
