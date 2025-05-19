@@ -47,7 +47,7 @@ export default function ChatArea() {
                 </CardHeader>
                 <CardContent className="space-y-2">
                     {suggestedTopics.map((topic, index) => (
-                        <Button key={index} variant="outline" className="w-full justify-start text-left" onClick={() => alert("Please start a new chat first to use this topic.")}>
+                        <Button key={index} variant="outline" className="w-full justify-start text-left h-auto py-2" onClick={() => alert("Please start a new chat first to use this topic.")}>
                             {topic}
                         </Button>
                     ))}
@@ -74,7 +74,7 @@ export default function ChatArea() {
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2 text-lg"><ThumbsUp className="h-5 w-5 text-primary"/>How are you feeling today?</CardTitle>
                 </CardHeader>
-                <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                <CardContent className="space-y-2">
                     {suggestedTopics.map((topic, index) => (
                         <Button key={index} variant="outline" className="w-full justify-start text-left h-auto py-2" onClick={() => handleTopicClick(topic)}>
                             {topic}
