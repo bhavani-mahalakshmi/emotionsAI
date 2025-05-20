@@ -11,6 +11,7 @@
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 
+// Register the eq helper
 const AnalyzeEmotionInputSchema = z.object({
   message: z.string().describe('The message to analyze for emotional tone.'),
   conversationHistory: z.array(z.object({ // Add conversation history
@@ -27,7 +28,15 @@ const AnalyzeEmotionOutputSchema = z.object({
 export type AnalyzeEmotionOutput = z.infer<typeof AnalyzeEmotionOutputSchema>;
 
 export async function analyzeEmotion(input: AnalyzeEmotionInput): Promise<AnalyzeEmotionOutput> {
-  return analyzeEmotionFlow(input);
+  // Format conversation history
+  const formattedInput = {
+    ...input,
+    conversationHistory: input.conversationHistory?.map(msg => ({
+      ...msg,
+      formattedMessage: `${msg.role === 'user' ? 'User' : 'Agent'}: ${msg.content}`
+    }))
+  };
+  return analyzeEmotionFlow(formattedInput);
 }
 
 const prompt = ai.definePrompt({
@@ -43,11 +52,7 @@ const prompt = ai.definePrompt({
   {{#if conversationHistory}}
   Conversation History:
   {{#each conversationHistory}}
-  {{#if (eq role \"user\")}}
-  User: {{{content}}}
-  {{else}}
-  Agent: {{{content}}}
-  {{/if}}
+  {{{formattedMessage}}}
   {{/each}}
   {{/if}}
   
