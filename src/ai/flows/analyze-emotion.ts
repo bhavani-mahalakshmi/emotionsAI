@@ -17,6 +17,7 @@ const AnalyzeEmotionInputSchema = z.object({
   conversationHistory: z.array(z.object({ // Add conversation history
     role: z.enum(['user', 'agent']),  // Indicate who sent the message
     content: z.string(),               // The message content
+    formattedMessage: z.string().optional(), // Optional formatted message
   })).optional().describe('The history of the conversation.'),
 });
 export type AnalyzeEmotionInput = z.infer<typeof AnalyzeEmotionInputSchema>;
