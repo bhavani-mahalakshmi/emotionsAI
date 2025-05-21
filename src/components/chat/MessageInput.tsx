@@ -15,16 +15,26 @@ export default function MessageInput({ selectedFollowUp, onFollowUpClear }: Mess
   const [message, setMessage] = useState('');
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
+  const handleInput = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setMessage(e.target.value);
+    // Auto-resize textarea
+    if (textareaRef.current) {
+      textareaRef.current.style.height = 'auto';
+      textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 200)}px`;
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!message.trim() || !activeConversationId || isLoadingAiResponse) return;
 
-    await addMessage(activeConversationId, message.trim());
+    const messageToSend = message.trim();
     setMessage('');
-    onFollowUpClear();
+    // Reset textarea height
     if (textareaRef.current) {
       textareaRef.current.style.height = 'auto';
     }
+    await addMessage(activeConversationId, messageToSend);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -34,32 +44,25 @@ export default function MessageInput({ selectedFollowUp, onFollowUpClear }: Mess
     }
   };
 
-  const handleInput = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setMessage(e.target.value);
-    const textarea = e.target;
-    textarea.style.height = 'auto';
-    textarea.style.height = `${Math.min(textarea.scrollHeight, 200)}px`;
-  };
-
   return (
-    <form onSubmit={handleSubmit} className="relative">
+    <form onSubmit={handleSubmit} className="relative w-full max-w-full flex flex-col gap-2 pb-[env(safe-area-inset-bottom)] px-2">
       {selectedFollowUp && (
-        <div className="mb-2 p-2 bg-purple-50 dark:bg-purple-900/30 rounded-lg border border-purple-200 dark:border-purple-800">
-          <div className="flex items-start justify-between gap-2">
-            <p className="text-sm text-purple-800 dark:text-purple-200 flex-1">{selectedFollowUp}</p>
+        <div className="mb-2 p-3 bg-primary/5 rounded-lg border border-primary/10 w-full">
+          <div className="flex items-start justify-between gap-3">
+            <p className="text-base text-primary flex-1">{selectedFollowUp}</p>
             <Button
               type="button"
               variant="ghost"
               size="icon"
-              className="h-6 w-6 text-purple-600 dark:text-purple-400 hover:bg-purple-100 dark:hover:bg-purple-800"
+              className="h-10 w-10 text-primary/60 hover:text-primary hover:bg-primary/10 min-w-[44px] min-h-[44px]"
               onClick={onFollowUpClear}
             >
-              <X className="h-4 w-4" />
+              <X className="h-5 w-5" />
             </Button>
           </div>
         </div>
       )}
-      <div className="relative">
+      <div className="relative w-full flex items-end gap-2">
         <textarea
           ref={textareaRef}
           name="message"
@@ -68,25 +71,32 @@ export default function MessageInput({ selectedFollowUp, onFollowUpClear }: Mess
           onKeyDown={handleKeyDown}
           placeholder="Type your message..."
           className={cn(
-            "w-full resize-none rounded-lg border border-border/40 bg-background/60 backdrop-blur p-4 pr-12",
+            "w-full max-w-full resize-none rounded-xl border border-border/40 bg-background/60 backdrop-blur p-4 pr-14",
             "focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50",
             "placeholder:text-muted-foreground/50",
-            "min-h-[60px] max-h-[200px]"
+            "min-h-[44px] max-h-[200px]",
+            "text-base leading-6",
+            "transition-all duration-200",
+            "disabled:opacity-50 disabled:cursor-not-allowed"
           )}
           disabled={!activeConversationId || isLoadingAiResponse}
+          rows={1}
         />
         <Button
           type="submit"
           size="icon"
           className={cn(
-            "absolute right-2 bottom-2",
-            "h-8 w-8",
+            "h-12 w-12 min-w-[44px] min-h-[44px]",
             "bg-primary hover:bg-primary/90",
-            "disabled:opacity-50 disabled:cursor-not-allowed"
+            "disabled:opacity-50 disabled:cursor-not-allowed",
+            "transition-all duration-200",
+            "shadow-lg shadow-primary/20",
+            "hover:shadow-xl hover:shadow-primary/30",
+            "active:scale-95"
           )}
           disabled={!message.trim() || !activeConversationId || isLoadingAiResponse}
         >
-          <Send className="h-4 w-4" />
+          <Send className="h-5 w-5" />
         </Button>
       </div>
     </form>
