@@ -4,10 +4,12 @@ import type { Conversation, Message } from '@/types';
 import React, { createContext, useContext, useState, ReactNode, useCallback, useEffect } from 'react';
 import { analyzeEmotion, AnalyzeEmotionInput } from '@/ai/flows/analyze-emotion';
 import { suggestTopics, SuggestTopicsInput } from '@/ai/flows/suggest-topics';
+import { summarizeConversation } from '@/ai/flows/summarize-conversation';
 import { useToast } from "@/hooks/use-toast";
 
 const AI_MESSAGE_HISTORY_LIMIT = 20; // Max messages to send to AI for context
 const MESSAGE_WARNING_THRESHOLD = 15; // Show warning when approaching limit
+const MESSAGE_LIMIT = 25; // Hard limit on messages per conversation
 
 interface ConversationsContextType {
   conversations: Conversation[];
@@ -21,6 +23,8 @@ interface ConversationsContextType {
   getActiveConversation: () => Conversation | undefined;
   deleteConversation: (id: string) => void;
   renameConversation: (id: string, newTitle: string) => void;
+  conversationSummary: string | null;
+  clearConversationSummary: () => void;
 }
 
 const ConversationsContext = createContext<ConversationsContextType | undefined>(undefined);
@@ -30,6 +34,7 @@ export const ConversationsProvider = ({ children }: { children: ReactNode }) => 
   const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
   const [isLoadingAiResponse, setIsLoadingAiResponse] = useState(false);
   const [suggestedTopics, setSuggestedTopicsState] = useState<string[]>([]);
+  const [conversationSummary, setConversationSummary] = useState<string | null>(null);
   const { toast } = useToast();
 
   // Load conversations from localStorage on mount
@@ -112,6 +117,31 @@ export const ConversationsProvider = ({ children }: { children: ReactNode }) => 
   };
 
   const addMessage = async (conversationId: string, messageContent: string) => {
+    const currentConversation = conversations.find(c => c.id === conversationId);
+    if (!currentConversation) throw new Error("Conversation not found");
+
+    // Check if we've reached the message limit
+    if (currentConversation.messages.length >= MESSAGE_LIMIT) {
+      // Generate summary of the conversation
+      const summary = await summarizeConversation({
+        messages: currentConversation.messages.map(msg => ({
+          role: msg.role,
+          content: msg.content,
+          timestamp: msg.timestamp.toISOString(),
+        })),
+      });
+
+      setConversationSummary(summary.summary);
+      
+      toast({
+        title: "Conversation Limit Reached",
+        description: "This conversation has reached its message limit. A summary has been generated that you can use to start a new conversation.",
+        variant: "default",
+      });
+      
+      return;
+    }
+
     const userMessage: Message = {
       id: crypto.randomUUID(),
       role: 'user',
@@ -130,9 +160,6 @@ export const ConversationsProvider = ({ children }: { children: ReactNode }) => 
     setIsLoadingAiResponse(true);
 
     try {
-      const currentConversation = conversations.find(c => c.id === conversationId);
-      if (!currentConversation) throw new Error("Conversation not found");
-
       // Send the complete conversation history
       const historyForAI = currentConversation.messages.map(msg => ({ 
         role: msg.role, 
@@ -225,6 +252,10 @@ export const ConversationsProvider = ({ children }: { children: ReactNode }) => 
     setConversations(prev => prev.map(conv => conv.id === id ? {...conv, title: newTitle, updatedAt: new Date()} : conv));
   };
 
+  const clearConversationSummary = () => {
+    setConversationSummary(null);
+  };
+
   return (
     <ConversationsContext.Provider
       value={{
@@ -239,6 +270,8 @@ export const ConversationsProvider = ({ children }: { children: ReactNode }) => 
         getActiveConversation,
         deleteConversation,
         renameConversation,
+        conversationSummary,
+        clearConversationSummary,
       }}
     >
       {children}

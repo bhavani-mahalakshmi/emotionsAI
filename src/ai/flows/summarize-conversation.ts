@@ -7,35 +7,43 @@
  * - SummarizeConversationOutput - The return type for the summarizeConversation function.
  */
 
-import {ai} from '@/ai/genkit';
-import {z} from 'genkit';
+import { ai } from '@/ai/genkit';
+import { z } from 'genkit';
 
 const SummarizeConversationInputSchema = z.object({
-  conversationHistory: z
-    .string()
-    .describe('A string containing the full conversation history to summarize.'),
+  messages: z.array(z.object({
+    role: z.enum(['user', 'agent']),
+    content: z.string(),
+    timestamp: z.string(),
+  })),
 });
+
 export type SummarizeConversationInput = z.infer<typeof SummarizeConversationInputSchema>;
 
 const SummarizeConversationOutputSchema = z.object({
-  summary: z.string().describe('A summary of the key discussion points and emotional themes.'),
+  summary: z.string().describe('A concise summary of the conversation focusing on main topics and key insights.'),
 });
-export type SummarizeConversationOutput = z.infer<typeof SummarizeConversationOutputSchema>;
 
-export async function summarizeConversation(input: SummarizeConversationInput): Promise<SummarizeConversationOutput> {
-  return summarizeConversationFlow(input);
-}
+export type SummarizeConversationOutput = z.infer<typeof SummarizeConversationOutputSchema>;
 
 const prompt = ai.definePrompt({
   name: 'summarizeConversationPrompt',
-  input: {schema: SummarizeConversationInputSchema},
-  output: {schema: SummarizeConversationOutputSchema},
+  input: { schema: SummarizeConversationInputSchema },
+  output: { schema: SummarizeConversationOutputSchema },
   prompt: `You are an AI assistant tasked with summarizing chat conversations.
 
-  Given the following conversation history, provide a concise summary of the key discussion points and emotional themes. Focus on capturing the essence of the dialogue and any significant emotional undertones.
+  Given the following conversation, provide a concise summary that captures:
+  1. The main topics discussed
+  2. Key insights shared
+  3. Important emotional themes
+  4. Any significant conclusions or takeaways
 
-  Conversation History:
-  {{conversationHistory}}`,
+  Conversation:
+  {{#each messages}}
+  {{role}}: {{content}}
+  {{/each}}
+
+  Summary:`,
 });
 
 const summarizeConversationFlow = ai.defineFlow(
@@ -45,7 +53,11 @@ const summarizeConversationFlow = ai.defineFlow(
     outputSchema: SummarizeConversationOutputSchema,
   },
   async input => {
-    const {output} = await prompt(input);
+    const { output } = await prompt(input);
     return output!;
   }
 );
+
+export async function summarizeConversation(input: SummarizeConversationInput): Promise<SummarizeConversationOutput> {
+  return summarizeConversationFlow(input);
+}

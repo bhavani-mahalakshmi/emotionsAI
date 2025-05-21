@@ -3,6 +3,7 @@ import React, { useRef, useEffect, useState } from 'react';
 import { useConversations } from '@/context/ConversationsContext';
 import MessageBubble from './MessageBubble';
 import MessageInput from './MessageInput';
+import ConversationSummary from './ConversationSummary';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Card } from '@/components/ui/card';
 import { BrainCircuit, Sparkles } from 'lucide-react';
@@ -13,6 +14,8 @@ export default function ChatArea() {
     getActiveConversation,
     isLoadingAiResponse,
     suggestedTopics,
+    conversationSummary,
+    clearConversationSummary,
   } = useConversations();
 
   const [selectedFollowUp, setSelectedFollowUp] = useState<string | null>(null);
@@ -27,36 +30,33 @@ export default function ChatArea() {
 
   if (!activeConversationId) {
     return (
-      <div className="h-full flex items-center justify-center p-4">
-        <Card className="w-full max-w-2xl p-8 bg-background/60 backdrop-blur">
-          <div className="flex flex-col items-center text-center gap-4">
-            <div className="p-3 rounded-full bg-primary/10">
-              <BrainCircuit className="h-8 w-8 text-primary" />
+      <div className="h-full flex flex-col items-center justify-center p-4 text-center">
+        <BrainCircuit className="h-12 w-12 text-primary/50 mb-4" />
+        <h2 className="text-xl font-semibold mb-2">Welcome to Emotion Insights</h2>
+        <p className="text-muted-foreground mb-6">
+          Start a new conversation to explore your emotions with AI assistance.
+        </p>
+        {suggestedTopics.length > 0 && (
+          <Card className="w-full max-w-md p-4">
+            <h3 className="text-sm font-medium mb-3 flex items-center gap-2">
+              <Sparkles className="h-4 w-4 text-primary" />
+              Suggested Topics
+            </h3>
+            <div className="space-y-2">
+              {suggestedTopics.map((topic, index) => (
+                <button
+                  key={index}
+                  className="w-full text-left p-2 rounded-lg hover:bg-muted transition-colors text-sm"
+                  onClick={() => {
+                    // Handle topic selection
+                  }}
+                >
+                  {topic}
+                </button>
+              ))}
             </div>
-            <h2 className="text-2xl font-semibold">Welcome to Emotion Insights</h2>
-            <p className="text-muted-foreground">
-              Start a new conversation to explore your emotions and gain insights.
-            </p>
-            {suggestedTopics.length > 0 && (
-              <div className="w-full mt-4">
-                <div className="flex items-center gap-2 mb-3">
-                  <Sparkles className="h-4 w-4 text-primary" />
-                  <h3 className="text-sm font-medium">Suggested Topics</h3>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                  {suggestedTopics.map((topic, index) => (
-                    <button
-                      key={index}
-                      className="p-3 text-left rounded-lg border border-border/40 hover:border-primary/50 hover:bg-primary/5 transition-colors"
-                    >
-                      {topic}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-        </Card>
+          </Card>
+        )}
       </div>
     );
   }
@@ -66,6 +66,12 @@ export default function ChatArea() {
       <div className="flex-1 overflow-hidden">
         <ScrollArea className="h-full">
           <div className="p-4 space-y-4" ref={scrollRef}>
+            {conversationSummary && (
+              <ConversationSummary
+                summary={conversationSummary}
+                onClear={clearConversationSummary}
+              />
+            )}
             {activeConversation?.messages.map((message) => (
               <MessageBubble
                 key={message.id}
