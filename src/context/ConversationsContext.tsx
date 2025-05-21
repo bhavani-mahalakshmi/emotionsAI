@@ -9,7 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 
 const AI_MESSAGE_HISTORY_LIMIT = 20; // Max messages to send to AI for context
 const MESSAGE_WARNING_THRESHOLD = 15; // Show warning when approaching limit
-const MESSAGE_LIMIT = 2; // Hard limit on messages per conversation
+const MESSAGE_LIMIT = 25; // Hard limit on messages per conversation
 
 interface ConversationsContextType {
   conversations: Conversation[];
