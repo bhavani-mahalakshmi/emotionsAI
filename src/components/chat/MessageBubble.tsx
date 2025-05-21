@@ -36,8 +36,8 @@ export default function MessageBubble({
       isUser ? "justify-end" : "justify-start"
     )}>
       {!isUser && (
-        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-blue-100 dark:bg-blue-900/30">
-          <MessageSquare className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-purple-100 dark:bg-purple-900/30">
+          <MessageSquare className="h-4 w-4 text-purple-600 dark:text-purple-300" />
         </div>
       )}
       <div className={cn(
@@ -48,7 +48,7 @@ export default function MessageBubble({
         {isUser && (
           <Card className={cn(
             "p-4",
-            "bg-blue-600 text-white dark:bg-blue-700"
+            "bg-blue-100 text-blue-800 border border-blue-200 dark:bg-blue-900/40 dark:text-blue-100 dark:border-blue-800"
           )}>
             {isLoading ? (
               <div className="space-y-2">
@@ -62,25 +62,25 @@ export default function MessageBubble({
         )}
         {/* AI message: show only analysis insight and follow-up questions if present, otherwise show content */}
         {!isUser && message.analysis && !isLoading ? (
-          <Card className="w-full p-4 space-y-4 bg-white/60 dark:bg-gray-900/60 backdrop-blur">
+          <Card className="w-full p-4 space-y-4 bg-purple-50 text-purple-900 border border-purple-200 dark:bg-purple-900/40 dark:text-purple-100 dark:border-purple-800 backdrop-blur">
             <div className="space-y-3">
               {/* Main Insight Section */}
               <div className="space-y-2">
-                <blockquote className="italic text-base text-gray-800 dark:text-gray-100 leading-relaxed">
+                <blockquote className="italic text-base text-purple-900 dark:text-purple-100 leading-relaxed">
                   {message.analysis.insights}
                 </blockquote>
               </div>
               {/* Follow-up Questions Section */}
               {message.analysis.followUpQuestions.length > 0 && (
-                <div className="space-y-2 bg-gray-50 dark:bg-gray-800/60 rounded-lg p-3">
-                  <span className="text-xs font-semibold text-gray-600 dark:text-gray-300 block mb-1">Follow-up Questions:</span>
+                <div className="space-y-2 bg-purple-100/60 dark:bg-purple-900/60 rounded-lg p-3">
+                  <span className="text-xs font-semibold text-purple-700 dark:text-purple-200 block mb-1">Follow-up Questions:</span>
                   <ScrollArea className="h-[100px]">
                     <div className="space-y-2 pr-4">
                       {message.analysis.followUpQuestions.map((question, index) => (
                         <Button
                           key={index}
                           variant="outline"
-                          className="w-full justify-start text-left h-auto py-2 text-sm border-blue-200 dark:border-blue-700 text-blue-800 dark:text-blue-200 bg-white dark:bg-gray-900 hover:bg-blue-50 dark:hover:bg-blue-900/30"
+                          className="w-full justify-start text-left h-auto py-2 text-sm border-purple-200 dark:border-purple-700 text-purple-800 dark:text-purple-200 bg-white dark:bg-purple-950 hover:bg-purple-50 dark:hover:bg-purple-900/30"
                           onClick={() => {
                             const input = document.querySelector('textarea[name=\"message\"]') as HTMLTextAreaElement;
                             if (input) {
@@ -103,7 +103,7 @@ export default function MessageBubble({
         {!isUser && !message.analysis && !isLoading && (
           <Card className={cn(
             "p-4",
-            "bg-gray-100 dark:bg-gray-800"
+            "bg-purple-50 text-purple-900 border border-purple-200 dark:bg-purple-900/40 dark:text-purple-100 dark:border-purple-800"
           )}>
             <p className="text-sm">{message.content}</p>
           </Card>
@@ -112,7 +112,7 @@ export default function MessageBubble({
         {!isUser && isLoading && (
           <Card className={cn(
             "p-4",
-            "bg-gray-100 dark:bg-gray-800"
+            "bg-purple-50 text-purple-900 border border-purple-200 dark:bg-purple-900/40 dark:text-purple-100 dark:border-purple-800"
           )}>
             <div className="space-y-2">
               <Skeleton className="h-4 w-[250px]" />
@@ -126,7 +126,7 @@ export default function MessageBubble({
       </div>
       {isUser && (
         <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-blue-100 dark:bg-blue-900/30">
-          <UserCircle className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+          <UserCircle className="h-4 w-4 text-blue-600 dark:text-blue-200" />
         </div>
       )}
     </div>
