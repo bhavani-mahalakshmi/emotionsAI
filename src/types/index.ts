@@ -5,6 +5,13 @@ export interface Message {
   timestamp: Date;
   emotion?: string; // Optional: For AI's emotion analysis result
   insights?: string; // Optional: For AI's insights
+  analysis?: {
+    emotionalTone: string;
+    insights: string;
+    possibleReasons: string[];
+    suggestions: string[];
+    followUpQuestions: string[];
+  };
 }
 
 export interface Conversation {
@@ -13,6 +20,8 @@ export interface Conversation {
   messages: Message[];
   createdAt: Date;
   updatedAt: Date;
+  lastMessage?: string;
+  lastMessageTime?: Date;
   // Optional: could store a summary or overall mood later
   // summary?: string; 
 }

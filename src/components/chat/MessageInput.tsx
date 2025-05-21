@@ -1,65 +1,72 @@
-
 "use client";
+import React, { useRef, useState } from 'react';
+import { useConversations } from '@/context/ConversationsContext';
+import { Button } from '@/components/ui/button';
+import { Send } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
-import { useState, useRef, KeyboardEvent } from 'react';
-import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
-import { SendHorizonal } from "lucide-react";
-import { useConversations } from "@/context/ConversationsContext";
-
-interface MessageInputProps {
-  conversationId: string;
-}
-
-export default function MessageInput({ conversationId }: MessageInputProps) {
+export default function MessageInput() {
+  const { activeConversationId, addMessage, isLoadingAiResponse } = useConversations();
   const [message, setMessage] = useState('');
-  const { addMessage, isLoadingAiResponse } = useConversations();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  const handleSubmit = async () => {
-    if (message.trim() === '' || isLoadingAiResponse) return;
-    await addMessage(conversationId, message.trim());
-    setMessage('');
-    textareaRef.current?.focus();
-  };
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!message.trim() || !activeConversationId || isLoadingAiResponse) return;
 
-  const handleKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
-    if (event.key === 'Enter' && !event.shiftKey) {
-      event.preventDefault();
-      handleSubmit();
+    await addMessage(activeConversationId, message.trim());
+    setMessage('');
+    if (textareaRef.current) {
+      textareaRef.current.style.height = 'auto';
     }
   };
-  
-  // Auto-resize textarea
-  const handleInput = (event: React.FormEvent<HTMLTextAreaElement>) => {
-    const textarea = event.currentTarget;
-    textarea.style.height = 'auto'; // Reset height
-    textarea.style.height = `${textarea.scrollHeight}px`; // Set to scroll height
-    setMessage(textarea.value);
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSubmit(e);
+    }
   };
 
+  const handleInput = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setMessage(e.target.value);
+    const textarea = e.target;
+    textarea.style.height = 'auto';
+    textarea.style.height = `${Math.min(textarea.scrollHeight, 200)}px`;
+  };
 
   return (
-    <div className="flex items-end space-x-2">
-      <Textarea
-        ref={textareaRef}
-        value={message}
-        onChange={handleInput}
-        onKeyDown={handleKeyDown}
-        placeholder="Share your thoughts or feelings..."
-        className="flex-1 resize-none min-h-[40px] max-h-[150px] rounded-lg shadow-sm focus-visible:ring-primary focus-visible:ring-offset-0"
-        disabled={isLoadingAiResponse}
-        rows={1}
-      />
-      <Button 
-        type="button" 
-        onClick={handleSubmit} 
-        disabled={isLoadingAiResponse || message.trim() === ''}
-        className="h-10 w-10 p-0 rounded-lg"
-        aria-label="Send message"
-      >
-        <SendHorizonal size={20} />
-      </Button>
-    </div>
+    <form onSubmit={handleSubmit} className="relative">
+      <div className="relative">
+        <textarea
+          ref={textareaRef}
+          name="message"
+          value={message}
+          onChange={handleInput}
+          onKeyDown={handleKeyDown}
+          placeholder="Type your message..."
+          className={cn(
+            "w-full resize-none rounded-lg border border-border/40 bg-background/60 backdrop-blur p-4 pr-12",
+            "focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50",
+            "placeholder:text-muted-foreground/50",
+            "min-h-[60px] max-h-[200px]"
+          )}
+          disabled={!activeConversationId || isLoadingAiResponse}
+        />
+        <Button
+          type="submit"
+          size="icon"
+          className={cn(
+            "absolute right-2 bottom-2",
+            "h-8 w-8",
+            "bg-primary hover:bg-primary/90",
+            "disabled:opacity-50 disabled:cursor-not-allowed"
+          )}
+          disabled={!message.trim() || !activeConversationId || isLoadingAiResponse}
+        >
+          <Send className="h-4 w-4" />
+        </Button>
+      </div>
+    </form>
   );
 }
