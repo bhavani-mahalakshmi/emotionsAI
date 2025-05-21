@@ -22,11 +22,13 @@ interface MessageBubbleProps {
     };
   };
   isLoading?: boolean;
+  onFollowUpSelect?: (question: string) => void;
 }
 
 export default function MessageBubble({
   message,
   isLoading = false,
+  onFollowUpSelect,
 }: MessageBubbleProps) {
   const isUser = message.role === 'user';
 
@@ -81,13 +83,7 @@ export default function MessageBubble({
                           key={index}
                           variant="outline"
                           className="w-full justify-start text-left h-auto py-2 text-sm border-purple-200 dark:border-purple-700 text-purple-800 dark:text-purple-200 bg-white dark:bg-purple-950 hover:bg-purple-50 dark:hover:bg-purple-900/30"
-                          onClick={() => {
-                            const input = document.querySelector('textarea[name=\"message\"]') as HTMLTextAreaElement;
-                            if (input) {
-                              input.value = question;
-                              input.focus();
-                            }
-                          }}
+                          onClick={() => onFollowUpSelect?.(question)}
                         >
                           {question}
                         </Button>

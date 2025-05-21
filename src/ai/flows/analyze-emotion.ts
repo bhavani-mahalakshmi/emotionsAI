@@ -10,6 +10,7 @@
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
+import {GoogleGenerativeAI} from '@google/generative-ai';
 
 // Register the eq helper
 const AnalyzeEmotionInputSchema = z.object({
@@ -30,6 +31,10 @@ const AnalyzeEmotionOutputSchema = z.object({
   followUpQuestions: z.array(z.string()).describe('Gentle, open-ended questions to help the user explore their feelings further.')
 });
 export type AnalyzeEmotionOutput = z.infer<typeof AnalyzeEmotionOutputSchema>;
+
+const model = new GoogleGenerativeAI(process.env.GOOGLE_AI_API_KEY!);
+const geminiModel = model.getGenerativeModel({ model: "gemini-pro" });
+console.log('API Key length:', process.env.GOOGLE_AI_API_KEY?.length);
 
 export async function analyzeEmotion(input: AnalyzeEmotionInput): Promise<AnalyzeEmotionOutput> {
   // Format conversation history

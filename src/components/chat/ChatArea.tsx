@@ -1,5 +1,5 @@
 "use client";
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import { useConversations } from '@/context/ConversationsContext';
 import MessageBubble from './MessageBubble';
 import MessageInput from './MessageInput';
@@ -15,6 +15,7 @@ export default function ChatArea() {
     suggestedTopics,
   } = useConversations();
 
+  const [selectedFollowUp, setSelectedFollowUp] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const activeConversation = getActiveConversation();
 
@@ -70,6 +71,7 @@ export default function ChatArea() {
                 key={message.id}
                 message={message}
                 isLoading={isLoadingAiResponse && message.id === activeConversation.messages[activeConversation.messages.length - 1]?.id}
+                onFollowUpSelect={setSelectedFollowUp}
               />
             ))}
             {isLoadingAiResponse && !activeConversation?.messages.some(m => m.role === 'agent') && (
@@ -87,7 +89,7 @@ export default function ChatArea() {
         </ScrollArea>
       </div>
       <div className="p-4 border-t border-border/40 bg-background/60 backdrop-blur">
-        <MessageInput />
+        <MessageInput selectedFollowUp={selectedFollowUp} onFollowUpClear={() => setSelectedFollowUp(null)} />
       </div>
     </div>
   );

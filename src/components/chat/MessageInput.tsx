@@ -2,10 +2,15 @@
 import React, { useRef, useState } from 'react';
 import { useConversations } from '@/context/ConversationsContext';
 import { Button } from '@/components/ui/button';
-import { Send } from 'lucide-react';
+import { Send, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-export default function MessageInput() {
+interface MessageInputProps {
+  selectedFollowUp: string | null;
+  onFollowUpClear: () => void;
+}
+
+export default function MessageInput({ selectedFollowUp, onFollowUpClear }: MessageInputProps) {
   const { activeConversationId, addMessage, isLoadingAiResponse } = useConversations();
   const [message, setMessage] = useState('');
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -16,6 +21,7 @@ export default function MessageInput() {
 
     await addMessage(activeConversationId, message.trim());
     setMessage('');
+    onFollowUpClear();
     if (textareaRef.current) {
       textareaRef.current.style.height = 'auto';
     }
@@ -37,6 +43,22 @@ export default function MessageInput() {
 
   return (
     <form onSubmit={handleSubmit} className="relative">
+      {selectedFollowUp && (
+        <div className="mb-2 p-2 bg-purple-50 dark:bg-purple-900/30 rounded-lg border border-purple-200 dark:border-purple-800">
+          <div className="flex items-start justify-between gap-2">
+            <p className="text-sm text-purple-800 dark:text-purple-200 flex-1">{selectedFollowUp}</p>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="h-6 w-6 text-purple-600 dark:text-purple-400 hover:bg-purple-100 dark:hover:bg-purple-800"
+              onClick={onFollowUpClear}
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+      )}
       <div className="relative">
         <textarea
           ref={textareaRef}
