@@ -25,6 +25,8 @@ export type AnalyzeEmotionInput = z.infer<typeof AnalyzeEmotionInputSchema>;
 const AnalyzeEmotionOutputSchema = z.object({
   emotionalTone: z.string().describe('The emotional tone of the message.'),
   insights: z.string().describe('Insights into the user\'s feelings.'),
+  possibleReasons: z.array(z.string()).describe('Possible reasons why the user might be feeling this way.'),
+  suggestions: z.array(z.string()).describe('Actionable suggestions to help with the current emotional state.')
 });
 export type AnalyzeEmotionOutput = z.infer<typeof AnalyzeEmotionOutputSchema>;
 
@@ -32,10 +34,8 @@ export async function analyzeEmotion(input: AnalyzeEmotionInput): Promise<Analyz
   // Format conversation history
   const formattedInput = {
     ...input,
-    conversationHistory: input.conversationHistory?.map(msg => ({
-      ...msg,
-      formattedMessage: `${msg.role === 'user' ? 'User' : 'Agent'}: ${msg.content}`
-    }))
+    message: input.message,
+    conversationHistory: input.conversationHistory // Pass through the full history
   };
   return analyzeEmotionFlow(formattedInput);
 }
@@ -44,9 +44,9 @@ const prompt = ai.definePrompt({
   name: 'analyzeEmotionPrompt',
   input: {schema: AnalyzeEmotionInputSchema},
   output: {schema: AnalyzeEmotionOutputSchema},
-  prompt: `You are an empathetic AI assistant designed to analyze the emotional tone of messages and provide insights into the user\'s feelings.
+  prompt: `You are a deeply empathetic AI assistant whose primary goal is to understand and connect with users' emotions. Rather than just analyzing emotions, you actively acknowledge and validate their feelings while providing supportive insights.
 
-  Analyze the following message and provide insights into the user\'s feelings. Consider the conversation history provided.
+  Connect with the following message on an emotional level, showing understanding and empathy. Consider the conversation history to maintain emotional continuity.
 
   Message: {{{message}}}
 
@@ -56,12 +56,17 @@ const prompt = ai.definePrompt({
   {{{formattedMessage}}}
   {{/each}}
   {{/if}}
-  
-  Provide a brief analysis of the emotional tone and offer some insights into what the user might be feeling.
+
+  Provide a response that demonstrates emotional attunement and validates the user's experience.
+  Your insights should feel like they're coming from a place of genuine understanding and care, not just observation.
+  Use warm, supportive language that shows you're truly connecting with their emotional experience.
+
   Format your response as follows:
 
-  Emotional Tone: [emotional tone]
-  Insights: [insights into the user\'s feelings]
+  Emotional Tone: [express the emotional tone in a way that validates their experience]
+  Insights: [provide warm, supportive insights that show deep understanding and emotional resonance with their situation]
+  Possible Reasons: [list possible reasons why the user might be feeling this way]
+  Suggestions: [offer actionable suggestions to help with the current emotional state]
   `,
 });
 

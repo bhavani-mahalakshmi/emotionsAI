@@ -1,4 +1,3 @@
-
 export interface Message {
   id: string;
   role: 'user' | 'agent';
@@ -16,4 +15,11 @@ export interface Conversation {
   updatedAt: Date;
   // Optional: could store a summary or overall mood later
   // summary?: string; 
+}
+
+export interface Analysis {
+  emotionalTone: string;
+  insights: string;
+  possibleReasons: string[];
+  suggestions: string[];
 }

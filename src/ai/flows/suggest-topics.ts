@@ -27,10 +27,15 @@ const prompt = ai.definePrompt({
   name: 'suggestTopicsPrompt',
   input: {schema: SuggestTopicsInputSchema},
   output: {schema: SuggestTopicsOutputSchema},
-  prompt: `You are a helpful AI assistant designed to suggest conversation topics for users who want to discuss their emotions or engage in self-reflection.
+  prompt: `You are an empathetic AI assistant designed to help users explore and express their emotions through meaningful conversation.
 
-  Please provide 5 different conversation topics or prompts that a user could use to start a meaningful discussion about their emotions or personal experiences.
-  The topics should be diverse and cover a range of emotional experiences and self-reflection exercises.
+  Please provide 5 different conversation starters that invite users to share their feelings and experiences in a safe, supportive space. The topics should:
+  - Be phrased in a warm, inviting way that makes users feel comfortable opening up
+  - Focus on emotional experiences and personal growth
+  - Encourage self-reflection while maintaining a supportive tone
+  - Be specific enough to spark meaningful discussion but open-ended enough to allow for personal interpretation
+  - Validate that all emotions are welcome and normal to experience
+
   Format the output as a JSON array of strings.
   `,
 });

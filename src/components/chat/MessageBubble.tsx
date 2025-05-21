@@ -1,4 +1,3 @@
-
 "use client";
 
 import type { Message } from "@/types";
@@ -42,6 +41,33 @@ export default function MessageBubble({ message }: MessageBubbleProps) {
                 <div className="flex items-start text-xs text-muted-foreground">
                   <Lightbulb size={14} className="mr-1 mt-0.5 text-accent shrink-0" />
                   <p><span className="font-medium">Insights:</span> {message.insights}</p>
+                </div>
+              )}
+            </div>
+          )}
+
+          {message.analysis && (
+            <div className="mt-2 text-sm text-muted-foreground border-l-2 border-primary/20 pl-3">
+              <div className="font-medium text-primary/80">{message.analysis.emotionalTone}</div>
+              <p className="mt-1">{message.analysis.insights}</p>
+              {message.analysis.possibleReasons && message.analysis.possibleReasons.length > 0 && (
+                <div className="mt-2">
+                  <div className="font-medium mb-1">Possible reasons:</div>
+                  <ul className="list-disc list-inside">
+                    {message.analysis.possibleReasons.map((reason, i) => (
+                      <li key={i}>{reason}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              {message.analysis.suggestions && message.analysis.suggestions.length > 0 && (
+                <div className="mt-2">
+                  <div className="font-medium mb-1">Suggestions:</div>
+                  <ul className="list-disc list-inside">
+                    {message.analysis.suggestions.map((suggestion, i) => (
+                      <li key={i}>{suggestion}</li>
+                    ))}
+                  </ul>
                 </div>
               )}
             </div>

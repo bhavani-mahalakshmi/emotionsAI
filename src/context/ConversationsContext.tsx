@@ -1,4 +1,3 @@
-
 "use client";
 
 import type { Conversation, Message } from '@/types';
@@ -134,31 +133,32 @@ export const ConversationsProvider = ({ children }: { children: ReactNode }) => 
       const currentConversation = conversations.find(c => c.id === conversationId);
       if (!currentConversation) throw new Error("Conversation not found");
 
-      const historyForAI = currentConversation.messages
-        .slice(-AI_MESSAGE_HISTORY_LIMIT) // Get last N messages
-        .map(msg => ({ role: msg.role, content: msg.content }));
+      // Send the complete conversation history
+      const historyForAI = currentConversation.messages.map(msg => ({ 
+        role: msg.role, 
+        content: msg.content,
+        formattedMessage: `${msg.role === 'user' ? 'User' : 'Agent'}: ${msg.content}`
+      }));
       
-      historyForAI.push({role: 'user', content: messageContent}); // Add current user message
+      // Add current message to history
+      historyForAI.push({
+        role: 'user', 
+        content: messageContent,
+        formattedMessage: `User: ${messageContent}`
+      });
 
+      // Show warning if conversation is getting long
       if (currentConversation.messages.length + 1 > MESSAGE_WARNING_THRESHOLD) {
-          if (historyForAI.length < currentConversation.messages.length + 1 && currentConversation.messages.length +1 > AI_MESSAGE_HISTORY_LIMIT) {
-             toast({
-                title: "Conversation Context",
-                description: `Conversation is long. Only the last ${AI_MESSAGE_HISTORY_LIMIT} messages are used for context.`,
-                variant: "default",
-             });
-          } else if (currentConversation.messages.length + 1 >= AI_MESSAGE_HISTORY_LIMIT) {
-             toast({
-                title: "Conversation Context Limit",
-                description: `You are approaching the message limit for AI context. Consider starting a new chat for new topics.`,
-                variant: "default",
-             });
-          }
+        toast({
+          title: "Long Conversation",
+          description: "This conversation is getting quite long. Consider starting a new chat for new topics.",
+          variant: "default",
+        });
       }
       
       const aiInput: AnalyzeEmotionInput = {
         message: messageContent,
-        conversationHistory: historyForAI.slice(0, -1), // History without the current message
+        conversationHistory: historyForAI,
       };
       
       const aiResponse = await analyzeEmotion(aiInput);
@@ -166,7 +166,7 @@ export const ConversationsProvider = ({ children }: { children: ReactNode }) => 
       const agentMessage: Message = {
         id: crypto.randomUUID(),
         role: 'agent',
-        content: aiResponse.insights, // Or a more conversational response combining tone and insights
+        content: aiResponse.insights,
         timestamp: new Date(),
         emotion: aiResponse.emotionalTone,
         insights: aiResponse.insights,
@@ -186,8 +186,8 @@ export const ConversationsProvider = ({ children }: { children: ReactNode }) => 
         description: "Could not get a response from the assistant. Please try again.",
         variant: "destructive",
       });
-      // Optionally add an error message to the chat
-       const errorMessage: Message = {
+      // Add an error message to the chat
+      const errorMessage: Message = {
         id: crypto.randomUUID(),
         role: 'agent',
         content: "I'm sorry, I encountered an error. Please try sending your message again.",
