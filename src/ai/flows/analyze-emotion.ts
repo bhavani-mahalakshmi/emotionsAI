@@ -34,7 +34,19 @@ export type AnalyzeEmotionOutput = z.infer<typeof AnalyzeEmotionOutputSchema>;
 
 const model = new GoogleGenerativeAI(process.env.GOOGLE_AI_API_KEY!);
 const geminiModel = model.getGenerativeModel({ model: "gemini-pro" });
-console.log('API Key length:', process.env.GOOGLE_AI_API_KEY?.length);
+
+// Add validation and logging for API key
+if (!process.env.GOOGLE_AI_API_KEY) {
+  throw new Error('GOOGLE_AI_API_KEY is not defined in environment variables');
+}
+
+// Add more detailed logging
+console.log('API Key validation:', {
+  exists: !!process.env.GOOGLE_AI_API_KEY,
+  length: process.env.GOOGLE_AI_API_KEY?.length,
+  firstChars: process.env.GOOGLE_AI_API_KEY?.substring(0, 4),
+  lastChars: process.env.GOOGLE_AI_API_KEY?.substring(-4)
+});
 
 export async function analyzeEmotion(input: AnalyzeEmotionInput): Promise<AnalyzeEmotionOutput> {
   // Format conversation history
@@ -95,7 +107,16 @@ const analyzeEmotionFlow = ai.defineFlow(
     outputSchema: AnalyzeEmotionOutputSchema,
   },
   async input => {
-    const {output} = await prompt(input);
-    return output!;
+    try {
+      const {output} = await prompt(input);
+      return output!;
+    } catch (error) {
+      console.error('Error in analyzeEmotionFlow:', {
+        error,
+        message: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : undefined
+      });
+      throw error;
+    }
   }
 );
