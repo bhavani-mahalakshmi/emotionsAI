@@ -168,8 +168,13 @@ export const ConversationsProvider = ({ children }: { children: ReactNode }) => 
         role: 'agent',
         content: aiResponse.insights,
         timestamp: new Date(),
-        emotion: aiResponse.emotionalTone,
-        insights: aiResponse.insights,
+        analysis: {
+          emotionalTone: aiResponse.emotionalTone,
+          insights: aiResponse.insights,
+          possibleReasons: aiResponse.possibleReasons,
+          suggestions: aiResponse.suggestions,
+          followUpQuestions: aiResponse.followUpQuestions
+        }
       };
 
       setConversations(prev =>

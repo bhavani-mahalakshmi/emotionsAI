@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useEffect, useRef } from 'react';
@@ -10,6 +9,56 @@ import { Bot, Sparkles, ThumbsUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
+
+interface EmotionAnalysis {
+  emotionalTone: string;
+  insights: string;
+  possibleReasons: string[];
+  suggestions: string[];
+  followUpQuestions: string[];
+}
+
+interface Message {
+  id: string;
+  content: string;
+  role: 'user' | 'agent';
+  analysis?: EmotionAnalysis;
+}
+
+const MessageDisplay = ({ message }: { message: Message }) => {
+  return (
+    <div className="space-y-4">
+      <MessageBubble content={message.content} role={message.role} />
+      {message.analysis && (
+        <div className="ml-4 space-y-3 text-sm">
+          <div className="text-muted-foreground">{message.analysis.insights}</div>
+          {message.analysis.followUpQuestions && message.analysis.followUpQuestions.length > 0 && (
+            <div className="space-y-2">
+              <div className="text-sm font-medium text-primary">Follow-up questions:</div>
+              {message.analysis.followUpQuestions.map((question, index) => (
+                <Button
+                  key={index}
+                  variant="outline"
+                  className="text-left w-full hover:bg-primary/10 rounded-lg p-2"
+                  onClick={() => {
+                    const input = document.querySelector('textarea[name="message"]') as HTMLTextAreaElement;
+                    if (input) {
+                      input.value = question;
+                      input.focus();
+                    }
+                  }}
+                >
+                  <span className="text-primary mr-2">→</span>
+                  {question}
+                </Button>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
 
 export default function ChatArea() {
   const { getActiveConversation, isLoadingAiResponse, suggestedTopics, fetchSuggestedTopics, addMessage, activeConversationId } = useConversations();
@@ -95,7 +144,7 @@ export default function ChatArea() {
           </div>
         )}
         {activeConversation.messages.map((msg) => (
-          <MessageBubble key={msg.id} message={msg} />
+          <MessageDisplay key={msg.id} message={msg} />
         ))}
         {isLoadingAiResponse && activeConversation.messages[activeConversation.messages.length -1]?.role === 'user' && (
            <div className="flex items-end space-x-2 animate-pulse mb-2">
