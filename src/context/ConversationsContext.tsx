@@ -9,7 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 
 const AI_MESSAGE_HISTORY_LIMIT = 20; // Max messages to send to AI for context
 const MESSAGE_WARNING_THRESHOLD = 15; // Show warning when approaching limit
-const MESSAGE_LIMIT = 25; // Hard limit on messages per conversation
+const MESSAGE_LIMIT = 2; // Hard limit on messages per conversation
 
 interface ConversationsContextType {
   conversations: Conversation[];
@@ -23,8 +23,6 @@ interface ConversationsContextType {
   getActiveConversation: () => Conversation | undefined;
   deleteConversation: (id: string) => void;
   renameConversation: (id: string, newTitle: string) => void;
-  conversationSummary: string | null;
-  clearConversationSummary: () => void;
 }
 
 const ConversationsContext = createContext<ConversationsContextType | undefined>(undefined);
@@ -34,7 +32,6 @@ export const ConversationsProvider = ({ children }: { children: ReactNode }) => 
   const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
   const [isLoadingAiResponse, setIsLoadingAiResponse] = useState(false);
   const [suggestedTopics, setSuggestedTopicsState] = useState<string[]>([]);
-  const [conversationSummary, setConversationSummary] = useState<string | null>(null);
   const { toast } = useToast();
 
   // Load conversations from localStorage on mount
@@ -131,11 +128,31 @@ export const ConversationsProvider = ({ children }: { children: ReactNode }) => 
         })),
       });
 
-      setConversationSummary(summary.summary);
+      // Create a new conversation with the summary
+      const newConversationId = crypto.randomUUID();
+      const now = new Date();
+      const summaryMessage: Message = {
+        id: crypto.randomUUID(),
+        role: 'agent',
+        content: `Previous conversation summary:\n\n${summary.summary}`,
+        timestamp: now,
+      };
+
+      const newConversation: Conversation = {
+        id: newConversationId,
+        title: `Chat - ${now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`,
+        messages: [summaryMessage],
+        createdAt: now,
+        updatedAt: now,
+      };
+
+      // Update state with the new conversation
+      setConversations(prev => [newConversation, ...prev]);
+      setActiveConversationId(newConversationId);
       
       toast({
-        title: "Conversation Limit Reached",
-        description: "This conversation has reached its message limit. A summary has been generated that you can use to start a new conversation.",
+        title: "New Conversation Created",
+        description: "A new conversation has been created with the summary of your previous conversation.",
         variant: "default",
       });
       
@@ -252,10 +269,6 @@ export const ConversationsProvider = ({ children }: { children: ReactNode }) => 
     setConversations(prev => prev.map(conv => conv.id === id ? {...conv, title: newTitle, updatedAt: new Date()} : conv));
   };
 
-  const clearConversationSummary = () => {
-    setConversationSummary(null);
-  };
-
   return (
     <ConversationsContext.Provider
       value={{
@@ -270,8 +283,6 @@ export const ConversationsProvider = ({ children }: { children: ReactNode }) => 
         getActiveConversation,
         deleteConversation,
         renameConversation,
-        conversationSummary,
-        clearConversationSummary,
       }}
     >
       {children}

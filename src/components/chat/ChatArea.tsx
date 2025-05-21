@@ -3,7 +3,6 @@ import React, { useRef, useEffect, useState } from 'react';
 import { useConversations } from '@/context/ConversationsContext';
 import MessageBubble from './MessageBubble';
 import MessageInput from './MessageInput';
-import ConversationSummary from './ConversationSummary';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Card } from '@/components/ui/card';
 import { BrainCircuit, Sparkles } from 'lucide-react';
@@ -14,8 +13,6 @@ export default function ChatArea() {
     getActiveConversation,
     isLoadingAiResponse,
     suggestedTopics,
-    conversationSummary,
-    clearConversationSummary,
   } = useConversations();
 
   const [selectedFollowUp, setSelectedFollowUp] = useState<string | null>(null);
@@ -66,12 +63,6 @@ export default function ChatArea() {
       <div className="flex-1 overflow-hidden">
         <ScrollArea className="h-full">
           <div className="p-4 space-y-4" ref={scrollRef}>
-            {conversationSummary && (
-              <ConversationSummary
-                summary={conversationSummary}
-                onClear={clearConversationSummary}
-              />
-            )}
             {activeConversation?.messages.map((message) => (
               <MessageBubble
                 key={message.id}
