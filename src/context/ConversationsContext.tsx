@@ -2,10 +2,8 @@
 
 import type { Conversation, Message } from '@/types';
 import React, { createContext, useContext, useState, ReactNode, useCallback, useEffect } from 'react';
-import { analyzeEmotion, AnalyzeEmotionInput } from '@/ai/flows/analyze-emotion';
-import { suggestTopics, SuggestTopicsInput } from '@/ai/flows/suggest-topics';
-import { summarizeConversation } from '@/ai/flows/summarize-conversation';
 import { useToast } from "@/hooks/use-toast";
+import * as api from '@/lib/api';
 
 const AI_MESSAGE_HISTORY_LIMIT = 20; // Max messages to send to AI for context
 const MESSAGE_WARNING_THRESHOLD = 15; // Show warning when approaching limit
@@ -34,42 +32,29 @@ export const ConversationsProvider = ({ children }: { children: ReactNode }) => 
   const [suggestedTopics, setSuggestedTopicsState] = useState<string[]>([]);
   const { toast } = useToast();
 
-  // Load conversations from localStorage on mount
+  // Load conversations from API on mount
   useEffect(() => {
-    const storedConversations = localStorage.getItem('emotionInsightsConversations');
-    if (storedConversations) {
-      const parsedConversations: Conversation[] = JSON.parse(storedConversations).map((conv: Conversation) => ({
-        ...conv,
-        createdAt: new Date(conv.createdAt),
-        updatedAt: new Date(conv.updatedAt),
-        messages: conv.messages.map(msg => ({
-            ...msg,
-            timestamp: new Date(msg.timestamp)
-        }))
-      }));
-      setConversations(parsedConversations);
-    }
-    const storedActiveId = localStorage.getItem('emotionInsightsActiveConversationId');
-    if (storedActiveId && storedActiveId !== "null") {
-        setActiveConversationId(storedActiveId);
-    }
-  }, []);
-
-  // Save conversations to localStorage whenever they change
-  useEffect(() => {
-    localStorage.setItem('emotionInsightsConversations', JSON.stringify(conversations));
-  }, [conversations]);
-
-  useEffect(() => {
-    localStorage.setItem('emotionInsightsActiveConversationId', activeConversationId || "null");
-  }, [activeConversationId]);
-
+    const loadConversations = async () => {
+      try {
+        const loadedConversations = await api.getConversations();
+        setConversations(loadedConversations);
+      } catch (error) {
+        console.error('Failed to load conversations:', error);
+        toast({
+          title: "Error",
+          description: "Failed to load conversations. Please try again.",
+          variant: "destructive",
+        });
+      }
+    };
+    loadConversations();
+  }, [toast]);
 
   const fetchSuggestedTopics = useCallback(async () => {
     try {
       setIsLoadingAiResponse(true);
-      const result = await suggestTopics({} as SuggestTopicsInput); // Empty input
-      setSuggestedTopicsState(result.topics);
+      const topics = await api.getSuggestedTopics();
+      setSuggestedTopicsState(topics);
     } catch (error) {
       console.error("Error fetching suggested topics:", error);
       toast({
@@ -84,226 +69,141 @@ export const ConversationsProvider = ({ children }: { children: ReactNode }) => 
   }, [toast]);
 
   const createConversation = useCallback(async (initialMessage?: string) => {
-    const newConversationId = crypto.randomUUID();
-    const now = new Date();
-    
-    // Generate a title based on the initial message or use a default
-    let title: string;
-    if (initialMessage) {
-      // Truncate and clean the message for the title
-      const cleanMessage = initialMessage.trim().replace(/[^\w\s]/g, '');
-      title = cleanMessage.length > 30 
-        ? cleanMessage.substring(0, 30) + '...'
-        : cleanMessage;
-    } else {
-      title = `Chat - ${now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
-    }
-
-    const newConversation: Conversation = {
-      id: newConversationId,
-      title,
-      messages: [],
-      createdAt: now,
-      updatedAt: now,
-    };
-    setConversations(prev => [newConversation, ...prev]);
-    setActiveConversationId(newConversationId);
-    await fetchSuggestedTopics(); // Fetch topics for the new chat
-    return newConversationId;
-  }, [fetchSuggestedTopics]);
-
-  const selectConversation = (id: string | null) => {
-    setActiveConversationId(id);
-    if (id) {
-        const activeConv = conversations.find(c => c.id === id);
-        if (activeConv && activeConv.messages.length === 0) {
-            fetchSuggestedTopics();
-        } else {
-            setSuggestedTopicsState([]); // Clear topics if conversation has messages
-        }
-    } else {
-        setSuggestedTopicsState([]); // Clear topics if no conversation selected
-    }
-  };
-
-  const addMessage = async (conversationId: string, messageContent: string) => {
-    const currentConversation = conversations.find(c => c.id === conversationId);
-    if (!currentConversation) throw new Error("Conversation not found");
-
-    // Check if we've reached the message limit
-    if (currentConversation.messages.length >= MESSAGE_LIMIT) {
-      // Generate summary of the conversation
-      const summary = await summarizeConversation({
-        messages: currentConversation.messages.map(msg => ({
-          role: msg.role,
-          content: msg.content,
-          timestamp: msg.timestamp.toISOString(),
-        })),
-      });
-
-      // Create a new conversation with the summary
-      const newConversationId = crypto.randomUUID();
-      const now = new Date();
-      const summaryMessage: Message = {
-        id: crypto.randomUUID(),
-        role: 'agent',
-        content: `Previous conversation summary:\n\n${summary.summary}`,
-        timestamp: now,
-      };
-
-      const newConversation: Conversation = {
-        id: newConversationId,
-        title: `Chat - ${now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`,
-        messages: [summaryMessage],
-        createdAt: now,
-        updatedAt: now,
-      };
-
-      // Update state with the new conversation
+    try {
+      const newConversationId = await api.createConversation();
+      const newConversation = await api.getConversation(newConversationId);
+      
       setConversations(prev => [newConversation, ...prev]);
       setActiveConversationId(newConversationId);
       
-      toast({
-        title: "New Conversation Created",
-        description: "A new conversation has been created with the summary of your previous conversation.",
-        variant: "default",
-      });
-      
-      return;
-    }
-
-    const userMessage: Message = {
-      id: crypto.randomUUID(),
-      role: 'user',
-      content: messageContent,
-      timestamp: new Date(),
-    };
-
-    setConversations(prev =>
-      prev.map(conv =>
-        conv.id === conversationId
-          ? { ...conv, messages: [...conv.messages, userMessage], updatedAt: new Date() }
-          : conv
-      )
-    );
-    
-    setIsLoadingAiResponse(true);
-
-    try {
-      // Send the complete conversation history
-      const historyForAI = currentConversation.messages.map(msg => ({ 
-        role: msg.role, 
-        content: msg.content,
-        formattedMessage: `${msg.role === 'user' ? 'User' : 'Agent'}: ${msg.content}`
-      }));
-      
-      // Add current message to history
-      historyForAI.push({
-        role: 'user', 
-        content: messageContent,
-        formattedMessage: `User: ${messageContent}`
-      });
-
-      // Show warning if conversation is getting long
-      if (currentConversation.messages.length + 1 > MESSAGE_WARNING_THRESHOLD) {
-        toast({
-          title: "Long Conversation",
-          description: "This conversation is getting quite long. Consider starting a new chat for new topics.",
-          variant: "default",
-        });
+      if (initialMessage) {
+        await addMessage(newConversationId, initialMessage);
+      } else {
+        await fetchSuggestedTopics();
       }
       
-      const aiInput: AnalyzeEmotionInput = {
-        message: messageContent,
-        conversationHistory: historyForAI,
-      };
+      return newConversationId;
+    } catch (error) {
+      console.error('Failed to create conversation:', error);
+      toast({
+        title: "Error",
+        description: "Failed to create conversation. Please try again.",
+        variant: "destructive",
+      });
+      throw error;
+    }
+  }, [fetchSuggestedTopics, toast]);
+
+  const selectConversation = useCallback((id: string | null) => {
+    setActiveConversationId(id);
+  }, []);
+
+  const addMessage = useCallback(async (conversationId: string, messageContent: string) => {
+    const currentConversation = conversations.find(c => c.id === conversationId);
+    if (!currentConversation) {
+      throw new Error('Conversation not found');
+    }
+
+    // Show warning if conversation is getting long
+    if (currentConversation.messages.length + 1 > MESSAGE_WARNING_THRESHOLD) {
+      toast({
+        title: "Long Conversation",
+        description: "This conversation is getting quite long. Consider starting a new chat for new topics.",
+        variant: "default",
+      });
+    }
+
+    try {
+      setIsLoadingAiResponse(true);
+      const { userMessage, aiMessage } = await api.addMessage(conversationId, messageContent);
       
-      const aiResponse = await analyzeEmotion(aiInput);
-
-      const agentMessage: Message = {
-        id: crypto.randomUUID(),
-        role: 'agent',
-        content: aiResponse.insights,
-        timestamp: new Date(),
-        analysis: {
-          emotionalTone: aiResponse.emotionalTone,
-          insights: aiResponse.insights,
-          possibleReasons: aiResponse.possibleReasons,
-          suggestions: aiResponse.suggestions,
-          followUpQuestions: aiResponse.followUpQuestions
-        }
-      };
-
       setConversations(prev =>
         prev.map(conv =>
           conv.id === conversationId
-            ? { ...conv, messages: [...conv.messages, agentMessage], updatedAt: new Date() }
+            ? {
+                ...conv,
+                messages: [...conv.messages, userMessage, aiMessage],
+                updatedAt: new Date().toISOString()
+              }
             : conv
         )
       );
     } catch (error) {
-      console.error("Error getting AI response:", error);
+      console.error('Failed to add message:', error);
       toast({
-        title: "AI Error",
-        description: "Could not get a response from the assistant. Please try again.",
+        title: "Error",
+        description: "Failed to send message. Please try again.",
         variant: "destructive",
       });
-      // Add an error message to the chat
-      const errorMessage: Message = {
-        id: crypto.randomUUID(),
-        role: 'agent',
-        content: "I'm sorry, I encountered an error. Please try sending your message again.",
-        timestamp: new Date(),
-      };
-      setConversations(prev =>
-        prev.map(conv =>
-          conv.id === conversationId
-            ? { ...conv, messages: [...conv.messages, errorMessage], updatedAt: new Date() }
-            : conv
-        )
-      );
+      throw error;
     } finally {
       setIsLoadingAiResponse(false);
     }
-  };
+  }, [conversations, toast]);
 
   const getActiveConversation = useCallback(() => {
-    return conversations.find(conv => conv.id === activeConversationId);
+    return conversations.find(c => c.id === activeConversationId);
   }, [conversations, activeConversationId]);
 
-  const deleteConversation = (id: string) => {
-    setConversations(prev => prev.filter(conv => conv.id !== id));
-    if (activeConversationId === id) {
-      setActiveConversationId(null);
+  const deleteConversation = useCallback(async (id: string) => {
+    try {
+      await api.deleteConversation(id);
+      setConversations(prev => prev.filter(c => c.id !== id));
+      if (activeConversationId === id) {
+        setActiveConversationId(null);
+      }
+    } catch (error) {
+      console.error('Failed to delete conversation:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete conversation. Please try again.",
+        variant: "destructive",
+      });
     }
-  };
+  }, [activeConversationId, toast]);
 
-  const renameConversation = (id: string, newTitle: string) => {
-    setConversations(prev => prev.map(conv => conv.id === id ? {...conv, title: newTitle, updatedAt: new Date()} : conv));
+  const renameConversation = useCallback(async (id: string, newTitle: string) => {
+    try {
+      await api.renameConversation(id, newTitle);
+      setConversations(prev =>
+        prev.map(conv =>
+          conv.id === id
+            ? { ...conv, title: newTitle }
+            : conv
+        )
+      );
+    } catch (error) {
+      console.error('Failed to rename conversation:', error);
+      toast({
+        title: "Error",
+        description: "Failed to rename conversation. Please try again.",
+        variant: "destructive",
+      });
+    }
+  }, [toast]);
+
+  const value = {
+    conversations,
+    activeConversationId,
+    isLoadingAiResponse,
+    suggestedTopics,
+    fetchSuggestedTopics,
+    createConversation,
+    selectConversation,
+    addMessage,
+    getActiveConversation,
+    deleteConversation,
+    renameConversation,
   };
 
   return (
-    <ConversationsContext.Provider
-      value={{
-        conversations,
-        activeConversationId,
-        isLoadingAiResponse,
-        suggestedTopics,
-        fetchSuggestedTopics,
-        createConversation,
-        selectConversation,
-        addMessage,
-        getActiveConversation,
-        deleteConversation,
-        renameConversation,
-      }}
-    >
+    <ConversationsContext.Provider value={value}>
       {children}
     </ConversationsContext.Provider>
   );
 };
 
-export const useConversations = (): ConversationsContextType => {
+export const useConversations = () => {
   const context = useContext(ConversationsContext);
   if (context === undefined) {
     throw new Error('useConversations must be used within a ConversationsProvider');

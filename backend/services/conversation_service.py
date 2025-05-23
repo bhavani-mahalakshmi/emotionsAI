@@ -5,10 +5,14 @@ from datetime import datetime
 import os
 
 # Database configuration
-DB_PATH = 'conversations.db'
+DB_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'data')
+DB_PATH = os.path.join(DB_DIR, 'conversations.db')
 
 def init_db():
     """Initialize the database with required tables."""
+    # Create data directory if it doesn't exist
+    os.makedirs(DB_DIR, exist_ok=True)
+    
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
     

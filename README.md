@@ -1,3 +1,135 @@
+# Emotion Insights AI
+
+A web application that helps users explore and understand their emotions through AI-powered conversations.
+
+## Features
+
+1. **Conversations Management**:
+   * Create new chats with AI
+   * View and manage conversation history
+   * Rename and delete conversations
+   * Persistent storage in SQLite database
+
+2. **Messaging Interface**:
+   * Real-time chat with AI
+   * Emotion analysis of messages
+   * Suggested conversation topics
+   * Message history with timestamps
+
+3. **AI Integration**:
+   * Emotion analysis using Google's Gemini AI
+   * Contextual responses based on conversation history
+   * Suggested topics for starting conversations
+   * Professional and empathetic responses
+
+## Prerequisites
+
+- Node.js 18+ and npm
+- Python 3.9+ (for local development)
+- Google AI API key
+- Docker and Docker Compose (for containerized setup)
+
+## Setup
+
+### Option 1: Local Development
+
+1. Clone the repository:
+   ```bash
+   git clone <repository-url>
+   cd emotionsAI
+   ```
+
+2. Install frontend dependencies:
+   ```bash
+   npm install
+   ```
+
+3. Install backend dependencies:
+   ```bash
+   cd backend
+   pip install -r requirements.txt
+   ```
+
+4. Create a `.env` file in the root directory with your Google AI API key:
+   ```
+   GOOGLE_API_KEY=your_api_key_here
+   ```
+
+### Option 2: Docker Setup
+
+1. Clone the repository:
+   ```bash
+   git clone <repository-url>
+   cd emotionsAI
+   ```
+
+2. Create a `.env` file in the root directory with your Google AI API key:
+   ```
+   GOOGLE_API_KEY=your_api_key_here
+   ```
+
+3. Build and start the containers:
+   ```bash
+   docker-compose up --build
+   ```
+
+## Running the Application
+
+### Option 1: Local Development
+
+1. Start the backend server:
+   ```bash
+   cd backend
+   python app.py
+   ```
+   The backend will run on http://localhost:5001
+
+2. In a new terminal, start the frontend development server:
+   ```bash
+   npm run dev
+   ```
+   The frontend will run on http://localhost:3000
+
+### Option 2: Docker
+
+1. Start all services:
+   ```bash
+   docker-compose up
+   ```
+   The frontend will be available at http://localhost:3000
+   The backend will be available at http://localhost:5001
+
+2. To stop the services:
+   ```bash
+   docker-compose down
+   ```
+
+3. Open http://localhost:3000 in your browser to use the application
+
+## Development
+
+- Frontend code is in the `src` directory
+- Backend code is in the `backend` directory
+- SQLite database is stored in `backend/conversations.db`
+
+## API Endpoints
+
+- `GET /api/conversations` - List all conversations
+- `POST /api/conversations` - Create a new conversation
+- `GET /api/conversations/:id` - Get a specific conversation
+- `DELETE /api/conversations/:id` - Delete a conversation
+- `PUT /api/conversations/:id/title` - Rename a conversation
+- `POST /api/conversations/:id/messages` - Add a message to a conversation
+- `GET /api/suggested-topics` - Get suggested conversation topics
+
+## Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Commit your changes
+4. Push to the branch
+5. Create a Pull Request
+
 ## Core Logic
 
 The application allows users to engage in conversations with an AI assistant. The primary features include:

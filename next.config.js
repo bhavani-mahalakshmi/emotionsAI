@@ -1,7 +1,12 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  env: {
-    GOOGLE_AI_API_KEY: process.env.GOOGLE_AI_API_KEY,
+  reactStrictMode: true,
+  webpack: (config) => {
+    config.watchOptions = {
+      poll: 1000,
+      aggregateTimeout: 300,
+    }
+    return config
   },
 }
 
