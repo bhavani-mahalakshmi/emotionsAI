@@ -17,7 +17,7 @@ interface ConversationsContextType {
   isLoadingAiResponse: boolean;
   suggestedTopics: string[];
   fetchSuggestedTopics: () => Promise<void>;
-  createConversation: () => Promise<string>;
+  createConversation: (initialMessage?: string) => Promise<string>;
   selectConversation: (id: string | null) => void;
   addMessage: (conversationId: string, messageContent: string) => Promise<void>;
   getActiveConversation: () => Conversation | undefined;
@@ -83,12 +83,25 @@ export const ConversationsProvider = ({ children }: { children: ReactNode }) => 
     }
   }, [toast]);
 
-  const createConversation = useCallback(async () => {
+  const createConversation = useCallback(async (initialMessage?: string) => {
     const newConversationId = crypto.randomUUID();
     const now = new Date();
+    
+    // Generate a title based on the initial message or use a default
+    let title: string;
+    if (initialMessage) {
+      // Truncate and clean the message for the title
+      const cleanMessage = initialMessage.trim().replace(/[^\w\s]/g, '');
+      title = cleanMessage.length > 30 
+        ? cleanMessage.substring(0, 30) + '...'
+        : cleanMessage;
+    } else {
+      title = `Chat - ${now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+    }
+
     const newConversation: Conversation = {
       id: newConversationId,
-      title: `Chat - ${now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`,
+      title,
       messages: [],
       createdAt: now,
       updatedAt: now,

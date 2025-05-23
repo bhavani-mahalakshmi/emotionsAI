@@ -5,7 +5,19 @@ import MessageBubble from './MessageBubble';
 import MessageInput from './MessageInput';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Card } from '@/components/ui/card';
-import { BrainCircuit, Sparkles, Plus, Menu } from 'lucide-react';
+import { BrainCircuit, Sparkles, Plus, Menu, Trash2 } from 'lucide-react';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { Button } from "@/components/ui/button";
 
 export default function ChatArea() {
   const {
@@ -16,12 +28,18 @@ export default function ChatArea() {
     createConversation,
     conversations,
     selectConversation,
+    deleteConversation,
   } = useConversations();
 
   const [selectedFollowUp, setSelectedFollowUp] = useState<string | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const activeConversation = getActiveConversation();
+
+  const handleTopicSelect = async (topic: string) => {
+    await createConversation(topic);
+    setDrawerOpen(false);
+  };
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -54,6 +72,19 @@ export default function ChatArea() {
           </button>
         </div>
         <nav className="flex-1 overflow-y-auto">
+          <div className="p-2">
+            <Button
+              variant="outline"
+              className="w-full justify-start gap-2"
+              onClick={() => {
+                createConversation();
+                setDrawerOpen(false);
+              }}
+            >
+              <Plus className="h-4 w-4" />
+              New Chat
+            </Button>
+          </div>
           <ul className="divide-y divide-border">
             {conversations.map(conv => (
               <li key={conv.id}>
@@ -75,50 +106,10 @@ export default function ChatArea() {
     </>
   );
 
-  if (!activeConversationId) {
-    return (
-      <div className="min-h-screen w-full flex flex-col items-center justify-center p-3 sm:p-6 text-center bg-gradient-to-b from-background to-muted/20">
-        <div className="w-full max-w-lg mx-auto space-y-8">
-          <div className="space-y-4">
-            <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary/10">
-              <BrainCircuit className="h-8 w-8 text-primary" />
-            </div>
-            <h2 className="text-2xl font-semibold tracking-tight">Welcome to Emotion Insights</h2>
-            <p className="text-muted-foreground text-lg max-w-md mx-auto">
-              Start a new conversation to explore your emotions with AI assistance.
-            </p>
-          </div>
-          
-          {suggestedTopics.length > 0 && (
-            <Card className="w-full p-4 sm:p-6 shadow-lg border-border/40 bg-background/80 backdrop-blur">
-              <h3 className="text-base font-medium mb-4 flex items-center gap-2 text-primary">
-                <Sparkles className="h-5 w-5" />
-                Suggested Topics
-              </h3>
-              <div className="grid gap-3">
-                {suggestedTopics.map((topic, index) => (
-                  <button
-                    key={index}
-                    className="w-full text-left p-4 rounded-lg hover:bg-muted/50 transition-colors text-base border border-border/40 hover:border-primary/20"
-                    onClick={() => {
-                      // Handle topic selection
-                    }}
-                  >
-                    {topic}
-                  </button>
-                ))}
-              </div>
-            </Card>
-          )}
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="min-h-screen w-full flex flex-col bg-gradient-to-b from-background to-muted/20">
       {/* Top bar with menu button */}
-      <div className="flex items-center h-14 px-2 sm:px-4 border-b border-border bg-background/80 sticky top-0 z-20">
+      <header className="flex items-center h-14 px-2 sm:px-4 border-b border-border bg-background/80 backdrop-blur-sm fixed top-0 left-0 right-0 z-50">
         <button
           type="button"
           aria-label="Open conversation drawer"
@@ -127,47 +118,119 @@ export default function ChatArea() {
         >
           <Menu className="w-6 h-6" />
         </button>
-        <span className="font-semibold text-lg truncate">{activeConversation?.title || 'Chat'}</span>
-      </div>
+        {activeConversationId ? (
+          <>
+            <span className="font-semibold text-lg truncate flex-1">{activeConversation?.title || 'Chat'}</span>
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-10 w-10 text-destructive hover:text-destructive hover:bg-destructive/10"
+                  aria-label="Delete conversation"
+                >
+                  <Trash2 className="w-5 h-5" />
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Delete Conversation</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Are you sure you want to delete this conversation? This action cannot be undone.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={() => {
+                      deleteConversation(activeConversationId);
+                      setDrawerOpen(false);
+                    }}
+                    className="bg-destructive hover:bg-destructive/90"
+                  >
+                    Delete
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          </>
+        ) : (
+          <span className="font-semibold text-lg">Emotion Insights</span>
+        )}
+      </header>
       {/* Drawer */}
       {drawerOpen && <Drawer />}
-      <div className="flex-1 overflow-hidden w-full">
-        <ScrollArea className="h-full w-full">
-          <div className="p-2 sm:p-6 space-y-3 sm:space-y-6 w-full max-w-full" ref={scrollRef}>
-            {activeConversation?.messages.map((message) => (
-              <MessageBubble
-                key={message.id}
-                message={message}
-                isLoading={isLoadingAiResponse && message.id === activeConversation.messages[activeConversation.messages.length - 1]?.id}
-                onFollowUpSelect={setSelectedFollowUp}
-              />
-            ))}
-            {isLoadingAiResponse && !activeConversation?.messages.some(m => m.role === 'agent') && (
-              <MessageBubble
-                message={{
-                  id: 'loading',
-                  role: 'agent',
-                  content: 'Thinking...',
-                  timestamp: new Date(),
-                }}
-                isLoading={true}
-              />
-            )}
+      
+      <main className="flex-1 pt-14 flex flex-col h-[calc(100vh-3.5rem)]">
+        {!activeConversationId ? (
+          <div className="flex-1 flex flex-col items-center justify-center p-3 sm:p-6 text-center">
+            <div className="w-full max-w-lg mx-auto space-y-8">
+              <div className="space-y-4">
+                <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary/10">
+                  <BrainCircuit className="h-8 w-8 text-primary" />
+                </div>
+                <h2 className="text-2xl font-semibold tracking-tight">Welcome to Emotion Insights</h2>
+                <p className="text-muted-foreground text-lg max-w-md mx-auto">
+                  Start a new conversation to explore your emotions with AI assistance.
+                </p>
+              </div>
+              
+              {suggestedTopics.length > 0 && (
+                <Card className="w-full p-4 sm:p-6 shadow-lg border-border/40 bg-background/80 backdrop-blur">
+                  <h3 className="text-base font-medium mb-4 flex items-center gap-2 text-primary">
+                    <Sparkles className="h-5 w-5" />
+                    Suggested Topics
+                  </h3>
+                  <div className="grid gap-3">
+                    {suggestedTopics.map((topic, index) => (
+                      <button
+                        key={index}
+                        className="w-full text-left p-4 rounded-lg hover:bg-muted/50 transition-colors text-base border border-border/40 hover:border-primary/20"
+                        onClick={() => handleTopicSelect(topic)}
+                      >
+                        {topic}
+                      </button>
+                    ))}
+                  </div>
+                </Card>
+              )}
+            </div>
           </div>
-        </ScrollArea>
-        {/* Floating Action Button for New Chat */}
-        <button
-          type="button"
-          aria-label="Start a new chat"
-          onClick={createConversation}
-          className="fixed z-30 bottom-[88px] right-4 sm:bottom-8 sm:right-8 rounded-full bg-primary text-primary-foreground shadow-lg hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-primary/50 w-14 h-14 flex items-center justify-center transition-all duration-200"
-        >
-          <Plus className="w-7 h-7" />
-        </button>
-      </div>
-      <div className="p-2 sm:p-4 border-t border-border/40 bg-background/80 backdrop-blur shadow-lg w-full pb-[env(safe-area-inset-bottom)]">
-        <MessageInput selectedFollowUp={selectedFollowUp} onFollowUpClear={() => setSelectedFollowUp(null)} />
-      </div>
+        ) : (
+          <div className="flex-1 overflow-hidden w-full flex flex-col">
+            <ScrollArea className="flex-1">
+              <div className="p-2 sm:p-6 space-y-3 sm:space-y-6 w-full max-w-full" ref={scrollRef}>
+                {activeConversation?.messages.map((message) => (
+                  <MessageBubble
+                    key={message.id}
+                    message={message}
+                    isLoading={isLoadingAiResponse && message.id === activeConversation.messages[activeConversation.messages.length - 1]?.id}
+                    onFollowUpSelect={setSelectedFollowUp}
+                  />
+                ))}
+                {isLoadingAiResponse && !activeConversation?.messages.some(m => m.role === 'agent') && (
+                  <MessageBubble
+                    message={{
+                      id: 'loading',
+                      role: 'agent',
+                      content: 'Thinking...',
+                      timestamp: new Date(),
+                    }}
+                    isLoading={true}
+                  />
+                )}
+              </div>
+            </ScrollArea>
+          </div>
+        )}
+        <div className="mt-auto p-2 sm:p-4 border-t border-border/40 bg-background/80 backdrop-blur shadow-lg w-full pb-[env(safe-area-inset-bottom)]">
+          <MessageInput 
+            selectedFollowUp={selectedFollowUp} 
+            onFollowUpClear={() => setSelectedFollowUp(null)}
+            autoFocus={!!activeConversationId}
+          />
+        </div>
+      </main>
     </div>
   );
 }

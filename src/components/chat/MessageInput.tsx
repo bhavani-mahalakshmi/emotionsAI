@@ -1,5 +1,5 @@
 "use client";
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { useConversations } from '@/context/ConversationsContext';
 import { Button } from '@/components/ui/button';
 import { Send, X } from 'lucide-react';
@@ -8,12 +8,19 @@ import { cn } from '@/lib/utils';
 interface MessageInputProps {
   selectedFollowUp: string | null;
   onFollowUpClear: () => void;
+  autoFocus?: boolean;
 }
 
-export default function MessageInput({ selectedFollowUp, onFollowUpClear }: MessageInputProps) {
-  const { activeConversationId, addMessage, isLoadingAiResponse } = useConversations();
+export default function MessageInput({ selectedFollowUp, onFollowUpClear, autoFocus }: MessageInputProps) {
+  const { activeConversationId, addMessage, isLoadingAiResponse, createConversation } = useConversations();
   const [message, setMessage] = useState('');
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  useEffect(() => {
+    if (autoFocus && textareaRef.current) {
+      textareaRef.current.focus();
+    }
+  }, [autoFocus]);
 
   const handleInput = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setMessage(e.target.value);
@@ -26,15 +33,18 @@ export default function MessageInput({ selectedFollowUp, onFollowUpClear }: Mess
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!message.trim() || !activeConversationId || isLoadingAiResponse) return;
+    if (!message.trim() || isLoadingAiResponse) return;
 
-    const messageToSend = message.trim();
+    const messageContent = message.trim();
     setMessage('');
-    // Reset textarea height
-    if (textareaRef.current) {
-      textareaRef.current.style.height = 'auto';
+
+    if (!activeConversationId) {
+      // Create a new conversation with the first message
+      await createConversation(messageContent);
+    } else {
+      // Add message to existing conversation
+      await addMessage(activeConversationId, messageContent);
     }
-    await addMessage(activeConversationId, messageToSend);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
