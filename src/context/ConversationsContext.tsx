@@ -13,8 +13,6 @@ interface ConversationsContextType {
   conversations: Conversation[];
   activeConversationId: string | null;
   isLoadingAiResponse: boolean;
-  suggestedTopics: string[];
-  fetchSuggestedTopics: () => Promise<void>;
   createConversation: (initialMessage?: string) => Promise<string>;
   selectConversation: (id: string | null) => void;
   addMessage: (conversationId: string, messageContent: string) => Promise<void>;
@@ -29,7 +27,6 @@ export const ConversationsProvider = ({ children }: { children: ReactNode }) => 
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
   const [isLoadingAiResponse, setIsLoadingAiResponse] = useState(false);
-  const [suggestedTopics, setSuggestedTopicsState] = useState<string[]>([]);
   const { toast } = useToast();
 
   // Load conversations from API on mount
@@ -50,24 +47,6 @@ export const ConversationsProvider = ({ children }: { children: ReactNode }) => 
     loadConversations();
   }, [toast]);
 
-  const fetchSuggestedTopics = useCallback(async () => {
-    try {
-      setIsLoadingAiResponse(true);
-      const topics = await api.getSuggestedTopics();
-      setSuggestedTopicsState(topics);
-    } catch (error) {
-      console.error("Error fetching suggested topics:", error);
-      toast({
-        title: "Error",
-        description: "Could not fetch suggested topics.",
-        variant: "destructive",
-      });
-      setSuggestedTopicsState([]);
-    } finally {
-      setIsLoadingAiResponse(false);
-    }
-  }, [toast]);
-
   const createConversation = useCallback(async (initialMessage?: string) => {
     try {
       const newConversation = await api.createConversation();
@@ -76,8 +55,6 @@ export const ConversationsProvider = ({ children }: { children: ReactNode }) => 
       
       if (initialMessage) {
         await addMessage(newConversation.id, initialMessage);
-      } else {
-        await fetchSuggestedTopics();
       }
       
       return newConversation.id;
@@ -90,7 +67,7 @@ export const ConversationsProvider = ({ children }: { children: ReactNode }) => 
       });
       throw error;
     }
-  }, [fetchSuggestedTopics, toast]);
+  }, [toast]);
 
   const selectConversation = useCallback(async (id: string | null) => {
     setActiveConversationId(id);
@@ -143,7 +120,7 @@ export const ConversationsProvider = ({ children }: { children: ReactNode }) => 
                 updatedAt: new Date().toISOString(),
                 lastMessage: aiMessage.content,
                 lastMessageTime: aiMessage.timestamp
-              } as Conversation
+              }
             : conv
         )
       );
@@ -205,8 +182,6 @@ export const ConversationsProvider = ({ children }: { children: ReactNode }) => 
     conversations,
     activeConversationId,
     isLoadingAiResponse,
-    suggestedTopics,
-    fetchSuggestedTopics,
     createConversation,
     selectConversation,
     addMessage,

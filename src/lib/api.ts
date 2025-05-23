@@ -51,6 +51,10 @@ export async function renameConversation(id: string, title: string): Promise<voi
 }
 
 export async function addMessage(conversationId: string, content: string): Promise<{ userMessage: Message; aiMessage: Message }> {
+  if (!conversationId || typeof conversationId !== 'string') {
+    throw new Error('Invalid conversation ID');
+  }
+
   const response = await fetch(`${API_BASE_URL}/conversations/${conversationId}/messages`, {
     method: 'POST',
     headers: {
@@ -58,9 +62,12 @@ export async function addMessage(conversationId: string, content: string): Promi
     },
     body: JSON.stringify({ content }),
   });
+  
   if (!response.ok) {
-    throw new Error('Failed to add message');
+    const error = await response.json().catch(() => ({ message: 'Failed to add message' }));
+    throw new Error(error.message || 'Failed to add message');
   }
+  
   return response.json();
 }
 

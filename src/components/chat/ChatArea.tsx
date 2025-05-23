@@ -25,7 +25,6 @@ export default function ChatArea() {
     activeConversationId,
     getActiveConversation,
     isLoadingAiResponse,
-    suggestedTopics,
     createConversation,
     conversations,
     selectConversation,
@@ -37,11 +36,6 @@ export default function ChatArea() {
   const scrollRef = useRef<HTMLDivElement>(null);
   const activeConversation = getActiveConversation();
   const [isLoadingConversation, setIsLoadingConversation] = useState(false);
-
-  const handleTopicSelect = async (topic: string) => {
-    await createConversation(topic);
-    setDrawerOpen(false);
-  };
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -183,29 +177,20 @@ export default function ChatArea() {
                 </div>
                 <h2 className="text-2xl font-semibold tracking-tight">Welcome to Emotion Insights</h2>
                 <p className="text-muted-foreground text-lg max-w-md mx-auto">
-                  Start a new conversation to explore your emotions with AI assistance.
+                  Hi! How are you feeling today? I'm here to listen and support you.
                 </p>
               </div>
               
-              {suggestedTopics.length > 0 && (
-                <Card className="w-full p-4 sm:p-6 shadow-lg border-border/40 bg-background/80 backdrop-blur">
-                  <h3 className="text-base font-medium mb-4 flex items-center gap-2 text-primary">
-                    <Sparkles className="h-5 w-5" />
-                    Suggested Topics
-                  </h3>
-                  <div className="grid gap-3">
-                    {suggestedTopics.map((topic, index) => (
-                      <button
-                        key={index}
-                        className="w-full text-left p-4 rounded-lg hover:bg-muted/50 transition-colors text-base border border-border/40 hover:border-primary/20"
-                        onClick={() => handleTopicSelect(topic)}
-                      >
-                        {topic}
-                      </button>
-                    ))}
-                  </div>
-                </Card>
-              )}
+              <Card className="w-full p-4 sm:p-6 shadow-lg border-border/40 bg-background/80 backdrop-blur">
+                <Button
+                  variant="outline"
+                  className="w-full justify-start gap-2 text-lg p-6"
+                  onClick={() => createConversation()}
+                >
+                  <Plus className="h-5 w-5" />
+                  Start a New Conversation
+                </Button>
+              </Card>
             </div>
           </div>
         ) : (
