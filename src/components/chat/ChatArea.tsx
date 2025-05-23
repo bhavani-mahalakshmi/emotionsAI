@@ -6,6 +6,7 @@ import MessageInput from './MessageInput';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Card } from '@/components/ui/card';
 import { BrainCircuit, Sparkles, Plus, Menu, Trash2 } from 'lucide-react';
+import type { Message } from '../../types';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -35,6 +36,7 @@ export default function ChatArea() {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const activeConversation = getActiveConversation();
+  const [isLoadingConversation, setIsLoadingConversation] = useState(false);
 
   const handleTopicSelect = async (topic: string) => {
     await createConversation(topic);
@@ -46,6 +48,16 @@ export default function ChatArea() {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [activeConversation?.messages]);
+
+  useEffect(() => {
+    if (activeConversationId) {
+      setIsLoadingConversation(true);
+      const conversation = getActiveConversation();
+      if (conversation?.messages) {
+        setIsLoadingConversation(false);
+      }
+    }
+  }, [activeConversationId, getActiveConversation]);
 
   // Drawer overlay and panel
   const Drawer = () => (
@@ -200,7 +212,7 @@ export default function ChatArea() {
           <div className="flex-1 overflow-hidden w-full flex flex-col">
             <ScrollArea className="flex-1">
               <div className="p-2 sm:p-6 space-y-3 sm:space-y-6 w-full max-w-full" ref={scrollRef}>
-                {activeConversation?.messages.map((message) => (
+                {activeConversation?.messages?.map((message: Message) => (
                   <MessageBubble
                     key={message.id}
                     message={message}
@@ -208,13 +220,18 @@ export default function ChatArea() {
                     onFollowUpSelect={setSelectedFollowUp}
                   />
                 ))}
-                {isLoadingAiResponse && !activeConversation?.messages.some(m => m.role === 'agent') && (
+                {isLoadingConversation && (
+                  <div className="flex justify-center items-center p-4">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                  </div>
+                )}
+                {isLoadingAiResponse && (!activeConversation?.messages?.length || activeConversation.messages[activeConversation.messages.length - 1]?.role === 'user') && (
                   <MessageBubble
                     message={{
                       id: 'loading',
                       role: 'agent',
                       content: 'Thinking...',
-                      timestamp: new Date(),
+                      timestamp: new Date().toISOString()
                     }}
                     isLoading={true}
                   />

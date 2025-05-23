@@ -6,21 +6,10 @@ import { Card } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import type { Message } from '../../types';
 
 interface MessageBubbleProps {
-  message: {
-    id: string;
-    role: 'user' | 'agent';
-    content: string;
-    timestamp: Date;
-    analysis?: {
-      emotionalTone: string;
-      insights: string;
-      possibleReasons: string[];
-      suggestions: string[];
-      followUpQuestions: string[];
-    };
-  };
+  message: Message;
   isLoading?: boolean;
   onFollowUpSelect?: (question: string) => void;
 }

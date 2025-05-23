@@ -89,7 +89,7 @@ export default function MessageInput({ selectedFollowUp, onFollowUpClear, autoFo
             "transition-all duration-200",
             "disabled:opacity-50 disabled:cursor-not-allowed"
           )}
-          disabled={!activeConversationId || isLoadingAiResponse}
+          disabled={isLoadingAiResponse}
           rows={1}
         />
         <Button
@@ -104,7 +104,7 @@ export default function MessageInput({ selectedFollowUp, onFollowUpClear, autoFo
             "hover:shadow-xl hover:shadow-primary/30",
             "active:scale-95"
           )}
-          disabled={!message.trim() || !activeConversationId || isLoadingAiResponse}
+          disabled={!message.trim() || isLoadingAiResponse}
         >
           <Send className="h-5 w-5" />
         </Button>

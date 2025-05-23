@@ -1,6 +1,6 @@
 "use client";
 
-import type { Conversation, Message } from '@/types';
+import type { Conversation, Message } from '../types';
 import React, { createContext, useContext, useState, ReactNode, useCallback, useEffect } from 'react';
 import { useToast } from "@/hooks/use-toast";
 import * as api from '@/lib/api';
@@ -70,19 +70,17 @@ export const ConversationsProvider = ({ children }: { children: ReactNode }) => 
 
   const createConversation = useCallback(async (initialMessage?: string) => {
     try {
-      const newConversationId = await api.createConversation();
-      const newConversation = await api.getConversation(newConversationId);
-      
-      setConversations(prev => [newConversation, ...prev]);
-      setActiveConversationId(newConversationId);
+      const newConversation = await api.createConversation();
+      setConversations(prev => [newConversation as Conversation, ...prev]);
+      setActiveConversationId(newConversation.id);
       
       if (initialMessage) {
-        await addMessage(newConversationId, initialMessage);
+        await addMessage(newConversation.id, initialMessage);
       } else {
         await fetchSuggestedTopics();
       }
       
-      return newConversationId;
+      return newConversation.id;
     } catch (error) {
       console.error('Failed to create conversation:', error);
       toast({
@@ -94,9 +92,27 @@ export const ConversationsProvider = ({ children }: { children: ReactNode }) => 
     }
   }, [fetchSuggestedTopics, toast]);
 
-  const selectConversation = useCallback((id: string | null) => {
+  const selectConversation = useCallback(async (id: string | null) => {
     setActiveConversationId(id);
-  }, []);
+    
+    if (id) {
+      try {
+        const conversation = await api.getConversation(id);
+        setConversations(prev =>
+          prev.map(conv =>
+            conv.id === id ? conversation : conv
+          )
+        );
+      } catch (error) {
+        console.error('Failed to fetch conversation:', error);
+        toast({
+          title: "Error",
+          description: "Failed to load conversation. Please try again.",
+          variant: "destructive",
+        });
+      }
+    }
+  }, [toast]);
 
   const addMessage = useCallback(async (conversationId: string, messageContent: string) => {
     const currentConversation = conversations.find(c => c.id === conversationId);
@@ -105,7 +121,8 @@ export const ConversationsProvider = ({ children }: { children: ReactNode }) => 
     }
 
     // Show warning if conversation is getting long
-    if (currentConversation.messages.length + 1 > MESSAGE_WARNING_THRESHOLD) {
+    const messageCount = currentConversation.messages?.length || 0;
+    if (messageCount + 1 > MESSAGE_WARNING_THRESHOLD) {
       toast({
         title: "Long Conversation",
         description: "This conversation is getting quite long. Consider starting a new chat for new topics.",
@@ -122,9 +139,11 @@ export const ConversationsProvider = ({ children }: { children: ReactNode }) => 
           conv.id === conversationId
             ? {
                 ...conv,
-                messages: [...conv.messages, userMessage, aiMessage],
-                updatedAt: new Date().toISOString()
-              }
+                messages: Array.isArray(conv.messages) ? [...conv.messages, userMessage, aiMessage] : [userMessage, aiMessage],
+                updatedAt: new Date().toISOString(),
+                lastMessage: aiMessage.content,
+                lastMessageTime: aiMessage.timestamp
+              } as Conversation
             : conv
         )
       );

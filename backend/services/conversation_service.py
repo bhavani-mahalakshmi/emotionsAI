@@ -3,6 +3,7 @@ from typing import List, Dict, Any, Optional
 import json
 from datetime import datetime
 import os
+import uuid
 
 # Database configuration
 DB_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'data')
@@ -42,8 +43,8 @@ def init_db():
     conn.commit()
     conn.close()
 
-def create_conversation() -> str:
-    """Create a new conversation and return its ID."""
+def create_conversation() -> Dict[str, Any]:
+    """Create a new conversation and return its complete object."""
     conversation_id = str(uuid.uuid4())
     now = datetime.utcnow().isoformat()
     title = f"Chat - {datetime.utcnow().strftime('%H:%M')}"
@@ -59,7 +60,16 @@ def create_conversation() -> str:
     conn.commit()
     conn.close()
     
-    return conversation_id
+    # Return a complete conversation object with an empty messages array
+    return {
+        "id": conversation_id,
+        "title": title,
+        "createdAt": now,
+        "updatedAt": now,
+        "messages": [],
+        "lastMessage": None,
+        "lastMessageTime": None
+    }
 
 def get_conversation(conversation_id: str) -> Optional[Dict[str, Any]]:
     """Get a conversation by ID with its messages."""

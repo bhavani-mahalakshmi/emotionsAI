@@ -2,6 +2,7 @@ import type {Metadata} from 'next';
 import { Inter } from 'next/font/google'; // Changed from Geist_Sans
 import './globals.css';
 import { Toaster } from "@/components/ui/toaster";
+import { Suspense } from 'react';
 
 const inter = Inter({ // Changed from Geist_Sans
   variable: '--font-inter', // Updated variable name
@@ -21,8 +22,12 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${inter.variable} font-sans antialiased`}> {/* Use the new font variable */}
-        {children}
-        <Toaster />
+        <Suspense fallback={<div>Loading...</div>}>
+          {children}
+        </Suspense>
+        <Suspense fallback={null}>
+          <Toaster />
+        </Suspense>
       </body>
     </html>
   );

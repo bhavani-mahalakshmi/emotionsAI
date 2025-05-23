@@ -1,4 +1,4 @@
-import type { Conversation, Message } from '@/types';
+import type { Conversation, Message } from '../types';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001/api';
 
@@ -10,15 +10,14 @@ export async function getConversations(): Promise<Conversation[]> {
   return response.json();
 }
 
-export async function createConversation(): Promise<string> {
+export async function createConversation(): Promise<Conversation> {
   const response = await fetch(`${API_BASE_URL}/conversations`, {
     method: 'POST',
   });
   if (!response.ok) {
     throw new Error('Failed to create conversation');
   }
-  const data = await response.json();
-  return data.id;
+  return response.json();
 }
 
 export async function getConversation(id: string): Promise<Conversation> {
