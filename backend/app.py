@@ -84,11 +84,11 @@ def add_message(conversation_id):
     ai_message = {
         "id": str(uuid.uuid4()),
         "role": "agent",
-        "content": ai_response['insights'],
+        "content": ai_response['insights'],  # Main response as content
         "timestamp": datetime.utcnow().isoformat(),
         "analysis": {
             "emotionalTone": ai_response['emotionalTone'],
-            "insights": ai_response['insights'],
+            # Don't duplicate insights here since it's already in content
             "possibleReasons": ai_response['possibleReasons'],
             "suggestions": ai_response['suggestions'],
             "followUpQuestions": ai_response['followUpQuestions']

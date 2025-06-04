@@ -92,7 +92,9 @@ export const ConversationsProvider = ({ children }: { children: ReactNode }) => 
   }, [toast]);
 
   const addMessage = useCallback(async (conversationId: string, messageContent: string) => {
-    const currentConversation = conversations.find(c => c.id === conversationId);
+    const id = String(conversationId);
+    
+    const currentConversation = conversations.find(c => c.id === id);
     if (!currentConversation) {
       throw new Error('Conversation not found');
     }
@@ -107,16 +109,45 @@ export const ConversationsProvider = ({ children }: { children: ReactNode }) => 
       });
     }
 
+    // Create temporary user message for optimistic update
+    const tempUserMessage: Message = {
+      id: `temp-${Date.now()}`,
+      role: 'user',
+      content: messageContent,
+      timestamp: new Date().toISOString()
+    };
+
+    // Update UI immediately with user message
+    setConversations(prev =>
+      prev.map(conv =>
+        conv.id === id
+          ? {
+              ...conv,
+              messages: [...(conv.messages || []), tempUserMessage],
+              updatedAt: new Date().toISOString(),
+              lastMessage: messageContent,
+              lastMessageTime: tempUserMessage.timestamp
+            }
+          : conv
+      )
+    );
+
     try {
       setIsLoadingAiResponse(true);
-      const { userMessage, aiMessage } = await api.addMessage(conversationId, messageContent);
+      // Send to API and get real messages
+      const { userMessage, aiMessage } = await api.addMessage(id, messageContent);
       
+      // Update with real messages
       setConversations(prev =>
         prev.map(conv =>
-          conv.id === conversationId
+          conv.id === id
             ? {
                 ...conv,
-                messages: Array.isArray(conv.messages) ? [...conv.messages, userMessage, aiMessage] : [userMessage, aiMessage],
+                messages: [
+                  ...conv.messages.filter(m => m.id !== tempUserMessage.id),
+                  userMessage,
+                  aiMessage
+                ],
                 updatedAt: new Date().toISOString(),
                 lastMessage: aiMessage.content,
                 lastMessageTime: aiMessage.timestamp
@@ -125,10 +156,22 @@ export const ConversationsProvider = ({ children }: { children: ReactNode }) => 
         )
       );
     } catch (error) {
+      // On error, remove the temporary message
+      setConversations(prev =>
+        prev.map(conv =>
+          conv.id === id
+            ? {
+                ...conv,
+                messages: conv.messages.filter(m => m.id !== tempUserMessage.id)
+              }
+            : conv
+        )
+      );
       console.error('Failed to add message:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to send message';
       toast({
         title: "Error",
-        description: "Failed to send message. Please try again.",
+        description: errorMessage,
         variant: "destructive",
       });
       throw error;

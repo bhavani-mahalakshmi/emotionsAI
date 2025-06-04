@@ -201,16 +201,11 @@ export default function ChatArea() {
                   <MessageBubble
                     key={message.id}
                     message={message}
-                    isLoading={isLoadingAiResponse && message.id === activeConversation.messages[activeConversation.messages.length - 1]?.id}
+                    isLoading={false}
                     onFollowUpSelect={setSelectedFollowUp}
                   />
                 ))}
-                {isLoadingConversation && (
-                  <div className="flex justify-center items-center p-4">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-                  </div>
-                )}
-                {isLoadingAiResponse && (!activeConversation?.messages?.length || activeConversation.messages[activeConversation.messages.length - 1]?.role === 'user') && (
+                {isLoadingAiResponse && activeConversation?.messages && (
                   <MessageBubble
                     message={{
                       id: 'loading',
