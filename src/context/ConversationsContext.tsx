@@ -48,14 +48,10 @@ export const ConversationsProvider = ({ children }: { children: ReactNode }) => 
   }, [toast]);
 
   const addMessage = useCallback(async (conversationId: string, messageContent: string) => {
-    console.log('addMessage called with conversationId:', conversationId, 'Type:', typeof conversationId);
-    
-    // Ensure conversationId is a string
     const id = String(conversationId);
     
     const currentConversation = conversations.find(c => c.id === id);
     if (!currentConversation) {
-      console.error('Conversation not found for ID:', id);
       throw new Error('Conversation not found');
     }
 
@@ -69,18 +65,43 @@ export const ConversationsProvider = ({ children }: { children: ReactNode }) => 
       });
     }
 
+    // Create temporary user message for optimistic update
+    const tempUserMessage: Message = {
+      id: `temp-${Date.now()}`,
+      role: 'user',
+      content: messageContent,
+      timestamp: new Date().toISOString()
+    };
+
+    // Update UI optimistically with user message
+    setConversations(prev =>
+      prev.map(conv =>
+        conv.id === id
+          ? {
+              ...conv,
+              messages: [...(conv.messages || []), tempUserMessage],
+              updatedAt: new Date().toISOString()
+            }
+          : conv
+      )
+    );
+
     try {
       setIsLoadingAiResponse(true);
-      console.log('Sending message to API:', { id, messageContent });
+      // Send to API and get real messages
       const { userMessage, aiMessage } = await api.addMessage(id, messageContent);
-      console.log('Received response from API:', { userMessage, aiMessage });
       
+      // Update with real messages
       setConversations(prev =>
         prev.map(conv =>
           conv.id === id
             ? {
                 ...conv,
-                messages: Array.isArray(conv.messages) ? [...conv.messages, userMessage, aiMessage] : [userMessage, aiMessage],
+                messages: [
+                  ...conv.messages.filter(m => m.id !== tempUserMessage.id && m.id !== userMessage.id),
+                  userMessage,
+                  aiMessage
+                ],
                 updatedAt: new Date().toISOString(),
                 lastMessage: aiMessage.content,
                 lastMessageTime: aiMessage.timestamp
@@ -89,6 +110,17 @@ export const ConversationsProvider = ({ children }: { children: ReactNode }) => 
         )
       );
     } catch (error) {
+      // On error, remove the temporary message
+      setConversations(prev =>
+        prev.map(conv =>
+          conv.id === id
+            ? {
+                ...conv,
+                messages: conv.messages.filter(m => m.id !== tempUserMessage.id)
+              }
+            : conv
+        )
+      );
       console.error('Failed to add message:', error);
       const errorMessage = error instanceof Error ? error.message : 'Failed to send message';
       toast({
@@ -136,17 +168,16 @@ export const ConversationsProvider = ({ children }: { children: ReactNode }) => 
           setIsLoadingAiResponse(true);
           const { userMessage, aiMessage } = await api.addMessage(conversation.id, initialMessage);
           
-          setConversations(prev => prev.map(conv => 
-            conv.id === conversation.id
-              ? {
-                  ...conv,
-                  messages: [userMessage, aiMessage],
-                  lastMessage: aiMessage.content,
-                  lastMessageTime: aiMessage.timestamp,
-                  updatedAt: new Date().toISOString()
-                }
-              : conv
-          ));
+          const updatedConversation = {
+            ...conversation,
+            messages: [userMessage, aiMessage],
+            lastMessage: aiMessage.content,
+            lastMessageTime: aiMessage.timestamp,
+            updatedAt: new Date().toISOString()
+          };
+          setConversations(prev => 
+            prev.map(conv => conv.id === conversation.id ? updatedConversation : conv)
+          );
         } catch (error) {
           console.error('Failed to add initial message:', error);
           toast({

@@ -34,26 +34,27 @@ export default function MessageInput({ selectedFollowUp, onFollowUpClear, autoFo
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!message.trim() || isLoadingAiResponse || isCreatingConversation) return;
-
     const messageContent = message.trim();
-    setMessage('');
+    if (!messageContent || isLoadingAiResponse || isCreatingConversation) return;
 
     try {
       if (!activeConversationId) {
-        // If no active conversation, create one and send first message in one step
         setIsCreatingConversation(true);
+        // Create conversation with initial message - this will handle both creation and first message
         await createConversation(messageContent);
       } else {
-        // Add message to existing conversation
+        // For existing conversations, first update UI optimistically
+        setMessage('');
+        // Then send the message
         await addMessage(activeConversationId, messageContent);
       }
     } catch (error) {
-      // Restore the message if there was an error
+      // On error, restore the message
       setMessage(messageContent);
       throw error;
     } finally {
       setIsCreatingConversation(false);
+      setMessage(''); // Clear message only after success
     }
   };
 

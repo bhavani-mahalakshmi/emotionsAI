@@ -44,16 +44,15 @@ export default function MessageBubble({ message, isLoading, onFollowUpSelect }: 
               <Skeleton className="h-4 w-[60%]" />
             </div>
           ) : (
-            <div className="prose prose-sm dark:prose-invert max-w-none">
-              <p className="whitespace-pre-wrap break-words leading-relaxed text-base">{message.content}</p>
-            </div>
+            <p className="whitespace-pre-wrap break-words leading-relaxed text-base">{message.content}</p>
           )}
         </Card>
-        {message.analysis && !isLoading && (
+        {/* Only show analysis if it exists and contains more than just the insights */}
+        {message.analysis && !isLoading && (message.analysis.emotionalTone || message.analysis.possibleReasons?.length || message.analysis.suggestions?.length) && (
           <div className="w-full space-y-2">
-            {message.analysis.insights && (
+            {message.analysis.emotionalTone && (
               <Card className="px-3 py-2 sm:p-4 bg-muted/30 shadow-sm border border-border/40 text-base">
-                <p className="text-sm sm:text-base text-muted-foreground leading-relaxed">{message.analysis.insights}</p>
+                <p className="text-sm sm:text-base text-muted-foreground leading-relaxed">{message.analysis.emotionalTone}</p>
               </Card>
             )}
             {message.analysis.followUpQuestions && message.analysis.followUpQuestions.length > 0 && (
