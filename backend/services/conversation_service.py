@@ -49,27 +49,34 @@ def create_conversation() -> Dict[str, Any]:
     now = datetime.utcnow().isoformat()
     title = f"Chat - {datetime.utcnow().strftime('%H:%M')}"
     
-    conn = sqlite3.connect(DB_PATH)
-    c = conn.cursor()
-    
-    c.execute(
-        'INSERT INTO conversations (id, title, created_at, updated_at) VALUES (?, ?, ?, ?)',
-        (conversation_id, title, now, now)
-    )
-    
-    conn.commit()
-    conn.close()
-    
-    # Return a complete conversation object with an empty messages array
-    return {
-        "id": conversation_id,
-        "title": title,
-        "createdAt": now,
-        "updatedAt": now,
-        "messages": [],
-        "lastMessage": None,
-        "lastMessageTime": None
-    }
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        c = conn.cursor()
+        
+        c.execute(
+            'INSERT INTO conversations (id, title, created_at, updated_at) VALUES (?, ?, ?, ?)',
+            (conversation_id, title, now, now)
+        )
+        
+        conn.commit()
+        
+        # Verify the conversation was created
+        c.execute('SELECT id FROM conversations WHERE id = ?', (conversation_id,))
+        if not c.fetchone():
+            raise Exception("Failed to verify conversation creation")
+            
+        # Return a complete conversation object with an empty messages array
+        return {
+            "id": conversation_id,
+            "title": title,
+            "createdAt": now,
+            "updatedAt": now,
+            "messages": [],
+            "lastMessage": None,
+            "lastMessageTime": None
+        }
+    finally:
+        conn.close()
 
 def get_conversation(conversation_id: str) -> Optional[Dict[str, Any]]:
     """Get a conversation by ID with its messages."""

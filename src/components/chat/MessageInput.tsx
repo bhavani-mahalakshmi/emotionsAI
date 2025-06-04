@@ -14,6 +14,7 @@ interface MessageInputProps {
 export default function MessageInput({ selectedFollowUp, onFollowUpClear, autoFocus }: MessageInputProps) {
   const { activeConversationId, addMessage, isLoadingAiResponse, createConversation } = useConversations();
   const [message, setMessage] = useState('');
+  const [isCreatingConversation, setIsCreatingConversation] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
@@ -33,17 +34,26 @@ export default function MessageInput({ selectedFollowUp, onFollowUpClear, autoFo
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!message.trim() || isLoadingAiResponse) return;
+    if (!message.trim() || isLoadingAiResponse || isCreatingConversation) return;
 
     const messageContent = message.trim();
     setMessage('');
 
-    if (!activeConversationId) {
-      // Create a new conversation with the first message
-      await createConversation(messageContent);
-    } else {
-      // Add message to existing conversation
-      await addMessage(activeConversationId, messageContent);
+    try {
+      if (!activeConversationId) {
+        // If no active conversation, create one and send first message in one step
+        setIsCreatingConversation(true);
+        await createConversation(messageContent);
+      } else {
+        // Add message to existing conversation
+        await addMessage(activeConversationId, messageContent);
+      }
+    } catch (error) {
+      // Restore the message if there was an error
+      setMessage(messageContent);
+      throw error;
+    } finally {
+      setIsCreatingConversation(false);
     }
   };
 
@@ -89,7 +99,7 @@ export default function MessageInput({ selectedFollowUp, onFollowUpClear, autoFo
             "transition-all duration-200",
             "disabled:opacity-50 disabled:cursor-not-allowed"
           )}
-          disabled={isLoadingAiResponse}
+          disabled={isLoadingAiResponse || isCreatingConversation}
           rows={1}
         />
         <Button
@@ -104,7 +114,7 @@ export default function MessageInput({ selectedFollowUp, onFollowUpClear, autoFo
             "hover:shadow-xl hover:shadow-primary/30",
             "active:scale-95"
           )}
-          disabled={!message.trim() || isLoadingAiResponse}
+          disabled={!message.trim() || isLoadingAiResponse || isCreatingConversation}
         >
           <Send className="h-5 w-5" />
         </Button>
