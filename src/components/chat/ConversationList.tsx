@@ -33,7 +33,7 @@ export default function ConversationList() {
   return (
     <ScrollArea className="h-[calc(100vh-200px)]">
       <div className="space-y-1 p-2">
-        {conversations.map((conversation) => (
+        {conversations.filter(conversation => conversation && conversation.id).map((conversation) => (
           <div
             key={conversation.id}
             className={cn(

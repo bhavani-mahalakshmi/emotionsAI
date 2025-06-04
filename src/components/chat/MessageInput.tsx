@@ -14,6 +14,7 @@ interface MessageInputProps {
 export default function MessageInput({ selectedFollowUp, onFollowUpClear, autoFocus }: MessageInputProps) {
   const { activeConversationId, addMessage, isLoadingAiResponse, createConversation } = useConversations();
   const [message, setMessage] = useState('');
+  const [isCreatingConversation, setIsCreatingConversation] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
@@ -33,29 +34,26 @@ export default function MessageInput({ selectedFollowUp, onFollowUpClear, autoFo
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!message.trim() || isLoadingAiResponse) return;
+    if (!message.trim() || isLoadingAiResponse || isCreatingConversation) return;
 
     const messageContent = message.trim();
     setMessage('');
 
     try {
       if (!activeConversationId) {
-        // Create a new conversation with the first message
-        const newConversationId = await createConversation(messageContent);
-        console.log('New conversation created with ID:', newConversationId, 'Type:', typeof newConversationId);
-        if (!newConversationId) {
-          throw new Error('Failed to create conversation');
-        }
+        // If no active conversation, create one and send first message in one step
+        setIsCreatingConversation(true);
+        await createConversation(messageContent);
       } else {
-        // Ensure we have a string ID
-        const conversationId = String(activeConversationId);
-        console.log('Adding message to conversation:', conversationId, 'Type:', typeof conversationId);
-        await addMessage(conversationId, messageContent);
+        // Add message to existing conversation
+        await addMessage(activeConversationId, messageContent);
       }
     } catch (error) {
-      console.error('Error sending message:', error);
-      // Reset the message if there was an error
+      // Restore the message if there was an error
       setMessage(messageContent);
+      throw error;
+    } finally {
+      setIsCreatingConversation(false);
     }
   };
 
@@ -101,7 +99,7 @@ export default function MessageInput({ selectedFollowUp, onFollowUpClear, autoFo
             "transition-all duration-200",
             "disabled:opacity-50 disabled:cursor-not-allowed"
           )}
-          disabled={isLoadingAiResponse}
+          disabled={isLoadingAiResponse || isCreatingConversation}
           rows={1}
         />
         <Button
@@ -116,7 +114,7 @@ export default function MessageInput({ selectedFollowUp, onFollowUpClear, autoFo
             "hover:shadow-xl hover:shadow-primary/30",
             "active:scale-95"
           )}
-          disabled={!message.trim() || isLoadingAiResponse}
+          disabled={!message.trim() || isLoadingAiResponse || isCreatingConversation}
         >
           <Send className="h-5 w-5" />
         </Button>
