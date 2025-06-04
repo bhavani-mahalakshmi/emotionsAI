@@ -34,9 +34,9 @@ except Exception as e:
 
 def analyze_emotion(message: str, conversation_history: List[Dict[str, Any]]) -> Dict[str, Any]:
     """
-    Analyze the emotional content of a message and provide insights with empathy.
+    Generate a response to the user's message using conversation history for context.
     """
-    logger.debug(f"Starting emotion analysis for message: {message[:100]}...")
+    logger.debug(f"Processing message: {message[:100]}...")
     logger.debug(f"Conversation history length: {len(conversation_history)} messages")
 
     # Prepare conversation history for context
@@ -52,9 +52,9 @@ def analyze_emotion(message: str, conversation_history: List[Dict[str, Any]]) ->
         logger.error(traceback.format_exc())
         raise
 
-    # Create the prompt for emotion analysis with a more empathetic approach
+    # Create a simple prompt that focuses on being helpful and conversational
     prompt = f"""
-    You are an empathetic AI assistant helping someone explore their emotions. Analyze the following message in the context of this conversation history:
+    You are a helpful and friendly AI assistant. Respond to the following message in the context of this conversation:
     
     Conversation History:
     {history_text}
@@ -62,22 +62,7 @@ def analyze_emotion(message: str, conversation_history: List[Dict[str, Any]]) ->
     Current Message:
     {message}
     
-    Please provide a warm, understanding response that:
-    1. Acknowledges the person's feelings
-    2. Shows genuine care and empathy
-    3. Offers gentle insights and support
-    4. Encourages further exploration of emotions
-    
-    Please provide a JSON response with the following structure:
-    {{
-        "emotionalTone": "A warm, empathetic description of the emotional tone",
-        "insights": "A caring and supportive insight about their emotional state",
-        "possibleReasons": ["A gentle exploration of possible reasons for their feelings"],
-        "suggestions": ["Supportive suggestions for emotional well-being"],
-        "followUpQuestions": ["Open-ended, caring questions to continue the conversation"]
-    }}
-    
-    Keep responses warm and conversational while maintaining professionalism. Ensure the response is valid JSON and follows this exact structure.
+    Please provide a helpful and engaging response. Be conversational, clear, and informative.
     """
     logger.debug(f"Generated prompt: {len(prompt)} characters")
 
@@ -86,62 +71,41 @@ def analyze_emotion(message: str, conversation_history: List[Dict[str, Any]]) ->
         response = model.generate_content(prompt)
         logger.debug("Received response from Gemini model")
         
-        # Try to parse the response as JSON
-        try:
-            # Extract JSON from the response text
-            response_text = response.text.strip()
-            logger.debug(f"Raw response text: {response_text[:200]}...")
-            
-            # Find the first { and last } to extract the JSON object
-            start = response_text.find('{')
-            end = response_text.rfind('}') + 1
-            
-            if start >= 0 and end > start:
-                json_str = response_text[start:end]
-                logger.debug(f"Extracted JSON string: {json_str[:200]}...")
-                
-                analysis = json.loads(json_str)
-                logger.info("Successfully parsed JSON response")
-                return analysis
-            else:
-                error_msg = "No JSON object found in response"
-                logger.error(f"{error_msg}. Full response: {response_text}")
-                raise ValueError(error_msg)
-                
-        except json.JSONDecodeError as e:
-            logger.error(f"JSON parsing error: {str(e)}")
-            logger.error(f"Raw response that failed to parse: {response.text}")
-            logger.error(traceback.format_exc())
-            raise
+        # Return a simple response structure
+        return {
+            "emotionalTone": "friendly and helpful",
+            "insights": response.text.strip(),
+            "possibleReasons": [],
+            "suggestions": [],
+            "followUpQuestions": []
+        }
 
     except Exception as e:
-        logger.error(f"Error in emotion analysis: {str(e)}")
+        logger.error(f"Error generating response: {str(e)}")
         logger.error(traceback.format_exc())
         return {
-            "emotionalTone": "concerned and supportive",
-            "insights": "I'm here to listen and support you. I'm having a moment of difficulty, but I'm still here for you. Would you like to share more about how you're feeling?",
-            "possibleReasons": ["I'm experiencing a temporary technical difficulty, but I'm still here to support you"],
-            "suggestions": ["Let's continue our conversation - I'm here to listen and support you"],
-            "followUpQuestions": ["How are you feeling right now?", "Would you like to tell me more about what's on your mind?", "What would be most helpful for you right now?"]
+            "emotionalTone": "friendly and helpful",
+            "insights": "I apologize, but I'm having trouble processing your message right now. Could you please try again?",
+            "possibleReasons": [],
+            "suggestions": [],
+            "followUpQuestions": []
         }
 
 def suggest_topics() -> List[str]:
     """
-    Generate a list of warm and empathetic conversation starter topics.
+    Generate a list of general conversation starter topics.
     """
     logger.debug("Starting topic suggestion generation")
     
     prompt = """
-    Generate 5 warm and empathetic conversation starter topics that could help someone explore their emotions.
+    Generate 5 interesting and engaging conversation starter topics that could help someone start a meaningful discussion.
     The topics should be:
-    1. Warm and inviting, showing genuine care and interest
+    1. Engaging and thought-provoking
     2. Open-ended to encourage sharing
-    3. Non-judgmental and supportive
-    4. Focused on emotional well-being and personal growth
-    5. Gentle and easy to respond to
-    6. Professional while maintaining a caring tone
+    3. Relevant to various interests
+    4. Easy to respond to
+    5. Professional and appropriate
     
-    Each topic should feel like a caring friend reaching out to check in.
     Format your response as a simple list of topics, one per line.
     """
     logger.debug(f"Generated prompt for topic suggestions: {len(prompt)} characters")
@@ -166,11 +130,11 @@ def suggest_topics() -> List[str]:
         logger.error(f"Error generating topics: {str(e)}")
         logger.error(traceback.format_exc())
         default_topics = [
-            "I'd love to know how you're feeling today. Would you like to share?",
-            "What's been bringing you joy or peace lately?",
-            "I'm here to listen. What's been on your mind?",
-            "How are you taking care of yourself these days?",
-            "What's something you're looking forward to?"
+            "What's something interesting you've learned recently?",
+            "What's a topic you'd like to explore or learn more about?",
+            "What's your perspective on the latest developments in technology?",
+            "What's a challenge you're currently working on?",
+            "What's something you're curious about?"
         ]
         logger.info("Returning default topics due to error")
         return default_topics 

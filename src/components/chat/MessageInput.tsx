@@ -38,12 +38,24 @@ export default function MessageInput({ selectedFollowUp, onFollowUpClear, autoFo
     const messageContent = message.trim();
     setMessage('');
 
-    if (!activeConversationId) {
-      // Create a new conversation with the first message
-      await createConversation(messageContent);
-    } else {
-      // Add message to existing conversation
-      await addMessage(activeConversationId, messageContent);
+    try {
+      if (!activeConversationId) {
+        // Create a new conversation with the first message
+        const newConversationId = await createConversation(messageContent);
+        console.log('New conversation created with ID:', newConversationId, 'Type:', typeof newConversationId);
+        if (!newConversationId) {
+          throw new Error('Failed to create conversation');
+        }
+      } else {
+        // Ensure we have a string ID
+        const conversationId = String(activeConversationId);
+        console.log('Adding message to conversation:', conversationId, 'Type:', typeof conversationId);
+        await addMessage(conversationId, messageContent);
+      }
+    } catch (error) {
+      console.error('Error sending message:', error);
+      // Reset the message if there was an error
+      setMessage(messageContent);
     }
   };
 

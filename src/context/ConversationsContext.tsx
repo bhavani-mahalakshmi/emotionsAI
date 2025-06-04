@@ -47,17 +47,117 @@ export const ConversationsProvider = ({ children }: { children: ReactNode }) => 
     loadConversations();
   }, [toast]);
 
+  const addMessage = useCallback(async (conversationId: string, messageContent: string) => {
+    console.log('addMessage called with conversationId:', conversationId, 'Type:', typeof conversationId);
+    
+    // Ensure conversationId is a string
+    const id = String(conversationId);
+    
+    const currentConversation = conversations.find(c => c.id === id);
+    if (!currentConversation) {
+      console.error('Conversation not found for ID:', id);
+      throw new Error('Conversation not found');
+    }
+
+    // Show warning if conversation is getting long
+    const messageCount = currentConversation.messages?.length || 0;
+    if (messageCount + 1 > MESSAGE_WARNING_THRESHOLD) {
+      toast({
+        title: "Long Conversation",
+        description: "This conversation is getting quite long. Consider starting a new chat for new topics.",
+        variant: "default",
+      });
+    }
+
+    try {
+      setIsLoadingAiResponse(true);
+      console.log('Sending message to API:', { id, messageContent });
+      const { userMessage, aiMessage } = await api.addMessage(id, messageContent);
+      console.log('Received response from API:', { userMessage, aiMessage });
+      
+      setConversations(prev =>
+        prev.map(conv =>
+          conv.id === id
+            ? {
+                ...conv,
+                messages: Array.isArray(conv.messages) ? [...conv.messages, userMessage, aiMessage] : [userMessage, aiMessage],
+                updatedAt: new Date().toISOString(),
+                lastMessage: aiMessage.content,
+                lastMessageTime: aiMessage.timestamp
+              }
+            : conv
+        )
+      );
+    } catch (error) {
+      console.error('Failed to add message:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to send message';
+      toast({
+        title: "Error",
+        description: errorMessage,
+        variant: "destructive",
+      });
+      throw error;
+    } finally {
+      setIsLoadingAiResponse(false);
+    }
+  }, [conversations, toast]);
+
   const createConversation = useCallback(async (initialMessage?: string) => {
     try {
+      // Create the conversation on the server
       const newConversation = await api.createConversation();
-      setConversations(prev => [newConversation as Conversation, ...prev]);
-      setActiveConversationId(newConversation.id);
+      console.log('Server response for new conversation:', newConversation);
       
-      if (initialMessage) {
-        await addMessage(newConversation.id, initialMessage);
+      if (!newConversation?.id) {
+        console.error('Invalid conversation response:', newConversation);
+        throw new Error('Invalid conversation response: missing ID');
       }
-      
-      return newConversation.id;
+
+      // Create a complete conversation object
+      const conversation: Conversation = {
+        id: String(newConversation.id),
+        title: newConversation.title || `Chat - ${new Date().toLocaleTimeString()}`,
+        messages: [],
+        createdAt: newConversation.createdAt || new Date().toISOString(),
+        updatedAt: newConversation.updatedAt || new Date().toISOString(),
+        lastMessage: undefined,
+        lastMessageTime: undefined
+      };
+
+      console.log('Created conversation object:', conversation);
+
+      // Add the conversation to state
+      setConversations(prev => [conversation, ...prev]);
+      setActiveConversationId(conversation.id);
+
+      // If there's an initial message, add it
+      if (initialMessage) {
+        try {
+          setIsLoadingAiResponse(true);
+          const { userMessage, aiMessage } = await api.addMessage(conversation.id, initialMessage);
+          
+          setConversations(prev => prev.map(conv => 
+            conv.id === conversation.id
+              ? {
+                  ...conv,
+                  messages: [userMessage, aiMessage],
+                  lastMessage: aiMessage.content,
+                  lastMessageTime: aiMessage.timestamp,
+                  updatedAt: new Date().toISOString()
+                }
+              : conv
+          ));
+        } catch (error) {
+          console.error('Failed to add initial message:', error);
+          toast({
+            title: "Error",
+            description: "Failed to send initial message. Please try again.",
+            variant: "destructive",
+          });
+        }
+      }
+
+      return conversation.id;
     } catch (error) {
       console.error('Failed to create conversation:', error);
       toast({
@@ -66,6 +166,8 @@ export const ConversationsProvider = ({ children }: { children: ReactNode }) => 
         variant: "destructive",
       });
       throw error;
+    } finally {
+      setIsLoadingAiResponse(false);
     }
   }, [toast]);
 
@@ -90,52 +192,6 @@ export const ConversationsProvider = ({ children }: { children: ReactNode }) => 
       }
     }
   }, [toast]);
-
-  const addMessage = useCallback(async (conversationId: string, messageContent: string) => {
-    const currentConversation = conversations.find(c => c.id === conversationId);
-    if (!currentConversation) {
-      throw new Error('Conversation not found');
-    }
-
-    // Show warning if conversation is getting long
-    const messageCount = currentConversation.messages?.length || 0;
-    if (messageCount + 1 > MESSAGE_WARNING_THRESHOLD) {
-      toast({
-        title: "Long Conversation",
-        description: "This conversation is getting quite long. Consider starting a new chat for new topics.",
-        variant: "default",
-      });
-    }
-
-    try {
-      setIsLoadingAiResponse(true);
-      const { userMessage, aiMessage } = await api.addMessage(conversationId, messageContent);
-      
-      setConversations(prev =>
-        prev.map(conv =>
-          conv.id === conversationId
-            ? {
-                ...conv,
-                messages: Array.isArray(conv.messages) ? [...conv.messages, userMessage, aiMessage] : [userMessage, aiMessage],
-                updatedAt: new Date().toISOString(),
-                lastMessage: aiMessage.content,
-                lastMessageTime: aiMessage.timestamp
-              }
-            : conv
-        )
-      );
-    } catch (error) {
-      console.error('Failed to add message:', error);
-      toast({
-        title: "Error",
-        description: "Failed to send message. Please try again.",
-        variant: "destructive",
-      });
-      throw error;
-    } finally {
-      setIsLoadingAiResponse(false);
-    }
-  }, [conversations, toast]);
 
   const getActiveConversation = useCallback(() => {
     return conversations.find(c => c.id === activeConversationId);
