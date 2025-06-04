@@ -18,10 +18,16 @@ export default function MessageInput({ selectedFollowUp, onFollowUpClear, autoFo
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
-    if (autoFocus && textareaRef.current) {
+    // Focus when the component mounts, autoFocus is true, or activeConversationId changes
+    if (textareaRef.current && (autoFocus || activeConversationId)) {
       textareaRef.current.focus();
+      // Scroll the textarea into view with smooth behavior
+      textareaRef.current.scrollIntoView({ 
+        behavior: 'smooth', 
+        block: 'center'
+      });
     }
-  }, [autoFocus]);
+  }, [autoFocus, activeConversationId]);
 
   const handleInput = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setMessage(e.target.value);
