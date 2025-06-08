@@ -1,7 +1,7 @@
 "use client";
 
 import type { Conversation, Message } from '../types';
-import React, { createContext, useContext, useState, ReactNode, useCallback, useEffect } from 'react';
+import React, { createContext, useContext, useState, ReactNode, useCallback, useEffect, useRef } from 'react';
 import { useToast } from "@/hooks/use-toast";
 import * as api from '@/lib/api';
 
@@ -28,6 +28,12 @@ export const ConversationsProvider = ({ children }: { children: ReactNode }) => 
   const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
   const [isLoadingAiResponse, setIsLoadingAiResponse] = useState(false);
   const { toast } = useToast();
+  
+  // Keep a ref to track the latest conversations state
+  const conversationsRef = useRef<Conversation[]>(conversations);
+  useEffect(() => {
+    conversationsRef.current = conversations;
+  }, [conversations]);
 
   // Load conversations from API on mount
   useEffect(() => {
@@ -47,54 +53,11 @@ export const ConversationsProvider = ({ children }: { children: ReactNode }) => 
     loadConversations();
   }, [toast]);
 
-  const createConversation = useCallback(async (initialMessage?: string) => {
-    try {
-      const newConversation = await api.createConversation();
-      setConversations(prev => [newConversation as Conversation, ...prev]);
-      setActiveConversationId(newConversation.id);
-      
-      if (initialMessage) {
-        await addMessage(newConversation.id, initialMessage);
-      }
-      
-      return newConversation.id;
-    } catch (error) {
-      console.error('Failed to create conversation:', error);
-      toast({
-        title: "Error",
-        description: "Failed to create conversation. Please try again.",
-        variant: "destructive",
-      });
-      throw error;
-    }
-  }, [toast]);
-
-  const selectConversation = useCallback(async (id: string | null) => {
-    setActiveConversationId(id);
-    
-    if (id) {
-      try {
-        const conversation = await api.getConversation(id);
-        setConversations(prev =>
-          prev.map(conv =>
-            conv.id === id ? conversation : conv
-          )
-        );
-      } catch (error) {
-        console.error('Failed to fetch conversation:', error);
-        toast({
-          title: "Error",
-          description: "Failed to load conversation. Please try again.",
-          variant: "destructive",
-        });
-      }
-    }
-  }, [toast]);
-
   const addMessage = useCallback(async (conversationId: string, messageContent: string) => {
     const id = String(conversationId);
     
-    const currentConversation = conversations.find(c => c.id === id);
+    // Use the ref to get the latest state
+    const currentConversation = conversationsRef.current.find(c => c.id === id);
     if (!currentConversation) {
       throw new Error('Conversation not found');
     }
@@ -118,8 +81,8 @@ export const ConversationsProvider = ({ children }: { children: ReactNode }) => 
     };
 
     // Update UI immediately with user message
-    setConversations(prev =>
-      prev.map(conv =>
+    setConversations(prev => {
+      const updated = prev.map(conv =>
         conv.id === id
           ? {
               ...conv,
@@ -129,8 +92,9 @@ export const ConversationsProvider = ({ children }: { children: ReactNode }) => 
               lastMessageTime: tempUserMessage.timestamp
             }
           : conv
-      )
-    );
+      );
+      return updated;
+    });
 
     try {
       setIsLoadingAiResponse(true);
@@ -138,8 +102,8 @@ export const ConversationsProvider = ({ children }: { children: ReactNode }) => 
       const { userMessage, aiMessage } = await api.addMessage(id, messageContent);
       
       // Update with real messages
-      setConversations(prev =>
-        prev.map(conv =>
+      setConversations(prev => {
+        const updated = prev.map(conv =>
           conv.id === id
             ? {
                 ...conv,
@@ -153,20 +117,22 @@ export const ConversationsProvider = ({ children }: { children: ReactNode }) => 
                 lastMessageTime: aiMessage.timestamp
               }
             : conv
-        )
-      );
+        );
+        return updated;
+      });
     } catch (error) {
       // On error, remove the temporary message
-      setConversations(prev =>
-        prev.map(conv =>
+      setConversations(prev => {
+        const updated = prev.map(conv =>
           conv.id === id
             ? {
                 ...conv,
                 messages: conv.messages.filter(m => m.id !== tempUserMessage.id)
               }
             : conv
-        )
-      );
+        );
+        return updated;
+      });
       console.error('Failed to add message:', error);
       const errorMessage = error instanceof Error ? error.message : 'Failed to send message';
       toast({
@@ -178,7 +144,61 @@ export const ConversationsProvider = ({ children }: { children: ReactNode }) => 
     } finally {
       setIsLoadingAiResponse(false);
     }
-  }, [conversations, toast]);
+  }, [toast]); // Note: removed conversations from dependencies since we use ref
+
+  const createConversation = useCallback(async (initialMessage?: string) => {
+    try {
+      // Create new conversation
+      const newConversation = await api.createConversation();
+      const newConversationWithMessages = { ...newConversation, messages: [] } as Conversation;
+      
+      // Update state and ref atomically
+      setConversations(prev => {
+        const updated = [newConversationWithMessages, ...prev];
+        conversationsRef.current = updated;
+        return updated;
+      });
+      
+      setActiveConversationId(newConversation.id);
+      
+      if (initialMessage) {
+        // Now safe to add message since ref is updated
+        await addMessage(newConversation.id, initialMessage);
+      }
+      
+      return newConversation.id;
+    } catch (error) {
+      console.error('Failed to create conversation:', error);
+      toast({
+        title: "Error",
+        description: "Failed to create conversation. Please try again.",
+        variant: "destructive",
+      });
+      throw error;
+    }
+  }, [addMessage, toast]);
+
+  const selectConversation = useCallback(async (id: string | null) => {
+    setActiveConversationId(id);
+    
+    if (id) {
+      try {
+        const conversation = await api.getConversation(id);
+        setConversations(prev =>
+          prev.map(conv =>
+            conv.id === id ? conversation : conv
+          )
+        );
+      } catch (error) {
+        console.error('Failed to fetch conversation:', error);
+        toast({
+          title: "Error",
+          description: "Failed to load conversation. Please try again.",
+          variant: "destructive",
+        });
+      }
+    }
+  }, [toast]);
 
   const getActiveConversation = useCallback(() => {
     return conversations.find(c => c.id === activeConversationId);
