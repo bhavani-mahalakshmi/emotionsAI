@@ -4,10 +4,6 @@ export interface Message {
   content: string;
   timestamp: string;
   analysis?: {
-    emotionalTone: string;
-    insights: string;
-    possibleReasons: string[];
-    suggestions: string[];
     followUpQuestions: string[];
   };
 }

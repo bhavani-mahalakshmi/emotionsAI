@@ -4,7 +4,7 @@ from datetime import datetime
 import uuid
 import os
 from dotenv import load_dotenv
-from services.ai_service import analyze_emotion, suggest_topics
+from services.ai_service import generate_response, suggest_topics
 from services.conversation_service import (
     create_conversation,
     get_conversation,
@@ -77,20 +77,16 @@ def add_message(conversation_id):
     if not conversation:
         return jsonify({"error": "Conversation not found"}), 404
 
-    # Analyze emotion and get AI response
-    ai_response = analyze_emotion(message_content, conversation['messages'])
+    # Generate AI response
+    ai_response = generate_response(message_content, conversation['messages'])
     
     # Create AI message
     ai_message = {
         "id": str(uuid.uuid4()),
         "role": "agent",
-        "content": ai_response['insights'],  # Main response as content
+        "content": ai_response['content'],
         "timestamp": datetime.utcnow().isoformat(),
         "analysis": {
-            "emotionalTone": ai_response['emotionalTone'],
-            # Don't duplicate insights here since it's already in content
-            "possibleReasons": ai_response['possibleReasons'],
-            "suggestions": ai_response['suggestions'],
             "followUpQuestions": ai_response['followUpQuestions']
         }
     }

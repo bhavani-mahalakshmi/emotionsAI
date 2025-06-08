@@ -32,11 +32,11 @@ except Exception as e:
     logger.error(f"Failed to initialize Gemini model: {str(e)}")
     raise
 
-def analyze_emotion(message: str, conversation_history: List[Dict[str, Any]]) -> Dict[str, Any]:
+def generate_response(message: str, conversation_history: List[Dict[str, Any]]) -> Dict[str, Any]:
     """
-    Analyze the emotional content of a message and provide insights with empathy.
+    Generate a response to the user's message and follow-up questions.
     """
-    logger.debug(f"Starting emotion analysis for message: {message[:100]}...")
+    logger.debug(f"Generating response for message: {message[:100]}...")
     logger.debug(f"Conversation history length: {len(conversation_history)} messages")
 
     # Prepare conversation history for context
@@ -52,9 +52,9 @@ def analyze_emotion(message: str, conversation_history: List[Dict[str, Any]]) ->
         logger.error(traceback.format_exc())
         raise
 
-    # Create the prompt for emotion analysis with a more empathetic approach
+    # Create the prompt for response generation
     prompt = f"""
-    You are an helpful AI assistant answering someone queries. Analyze the following message in the context of this conversation history:
+    You are a helpful AI assistant answering someone's queries. Generate a response for the following message in the context of this conversation history:
     
     Conversation History:
     {history_text}
@@ -62,19 +62,10 @@ def analyze_emotion(message: str, conversation_history: List[Dict[str, Any]]) ->
     Current Message:
     {message}
     
-    Please provide a valid response and a follow up question that:
-    1. Acknowledges the person's feelings
-    2. Shows genuine care and empathy
-    3. Offers gentle insights and support
-    4. Encourages further exploration of the query
-    
-    Please provide a JSON response with the following structure:
+    Please provide a response and follow-up questions in JSON format with this structure:
     {{
-        "emotionalTone": "Tone of the user",
-        "insights": "An insight about the response",
-        "possibleReasons": ["Possible reasons for the answer"],
-        "suggestions": ["Supportive suggestions"],
-        "followUpQuestions": ["Open-ended questions to continue the conversation"]
+        "content": "Your helpful response to the user's message",
+        "followUpQuestions": ["2-3 relevant follow-up questions to continue the conversation"]
     }}
     
     Ensure the response is valid JSON and follows this exact structure.
@@ -118,11 +109,8 @@ def analyze_emotion(message: str, conversation_history: List[Dict[str, Any]]) ->
         logger.error(f"Error in emotion analysis: {str(e)}")
         logger.error(traceback.format_exc())
         return {
-            "emotionalTone": "concerned and supportive",
-            "insights": "I'm here to listen and support you. I'm having a moment of difficulty, but I'm still here for you. Would you like to share more about how you're feeling?",
-            "possibleReasons": ["I'm experiencing a temporary technical difficulty, but I'm still here to support you"],
-            "suggestions": ["Let's continue our conversation - I'm here to listen and support you"],
-            "followUpQuestions": ["How are you feeling right now?", "Would you like to tell me more about what's on your mind?", "What would be most helpful for you right now?"]
+            "content": "I apologize, but I'm having a temporary technical difficulty. How can I assist you further?",
+            "followUpQuestions": ["Could you please rephrase your question?", "What specific information are you looking for?"]
         }
 
 def suggest_topics() -> List[str]:

@@ -47,14 +47,9 @@ export default function MessageBubble({ message, isLoading, onFollowUpSelect }: 
             <p className="whitespace-pre-wrap break-words leading-relaxed text-base">{message.content}</p>
           )}
         </Card>
-        {message.analysis && !isLoading && (
+        {message.analysis?.followUpQuestions && message.analysis.followUpQuestions.length > 0 && !isLoading && (
           <div className="w-full space-y-2">
-            {message.analysis.emotionalTone && (
-              <Card className="px-3 py-2 sm:p-4 bg-muted/30 shadow-sm border border-border/40 text-base">
-                <p className="text-sm sm:text-base text-muted-foreground leading-relaxed">{message.analysis.emotionalTone}</p>
-              </Card>
-            )}
-            {message.analysis.followUpQuestions && message.analysis.followUpQuestions.length > 0 && (
+            {message.analysis?.followUpQuestions && message.analysis.followUpQuestions.length > 0 && (
               <ScrollArea className="w-full">
                 <div className="flex flex-wrap gap-2 overflow-x-auto pb-2">
                   {message.analysis.followUpQuestions.map((question, index) => (

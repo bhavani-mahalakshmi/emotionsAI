@@ -1,6 +1,6 @@
 # Emotion Insights AI
 
-A web application that helps users explore and understand their emotions through AI-powered conversations.
+A web application for having AI-powered conversations.
 
 ## Features
 
@@ -144,12 +144,10 @@ The application allows users to engage in conversations with an AI assistant. Th
 2.  **Messaging Interface**:
     *   A familiar chat interface where users can type and send messages.
     *   Messages from the user and the AI agent are displayed in distinct bubbles.
-    *   The AI's response includes an analysis of the emotional tone of the user's message and related insights.
+    *   The AI's response includes helpful information and relevant follow-up questions.
 
 3.  **AI Integration (Genkit)**:
-    *   **Emotion Analysis**: When a user sends a message, it (along with recent conversation history for context) is sent to a Genkit flow (`analyzeEmotionFlow`). This flow uses an AI model to:
-        *   Determine the emotional tone of the user's message.
-        *   Provide insights based on the detected emotion and message content.
+    *   **AI Responses**: When a user sends a message, it (along with recent conversation history for context) is sent to an AI model that generates a helpful response and relevant follow-up questions.
     *   **Suggested Topics**:
         *   When the app loads without an active conversation, or when a new, empty chat is created, a Genkit flow (`suggestTopicsFlow`) is called to generate a list of conversation starter topics.
         *   These topics are displayed to the user to help them initiate a discussion.
