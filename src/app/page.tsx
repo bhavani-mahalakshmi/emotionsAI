@@ -1,11 +1,11 @@
 
 import AppLayout from "@/components/layout/AppLayout";
-import { ConversationsProvider } from "@/context/ConversationsContext";
+import Providers from "@/components/providers/Providers";
 
 export default function Home() {
   return (
-    <ConversationsProvider>
+    <Providers>
       <AppLayout />
-    </ConversationsProvider>
+    </Providers>
   );
 }

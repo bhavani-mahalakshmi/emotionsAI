@@ -54,7 +54,7 @@ def analyze_emotion(message: str, conversation_history: List[Dict[str, Any]]) ->
 
     # Create the prompt for emotion analysis with a more empathetic approach
     prompt = f"""
-    You are an empathetic AI assistant helping someone explore their emotions. Analyze the following message in the context of this conversation history:
+    You are an helpful AI assistant answering someone queries. Analyze the following message in the context of this conversation history:
     
     Conversation History:
     {history_text}
@@ -62,22 +62,22 @@ def analyze_emotion(message: str, conversation_history: List[Dict[str, Any]]) ->
     Current Message:
     {message}
     
-    Please provide a warm, understanding response that:
+    Please provide a valid response and a follow up question that:
     1. Acknowledges the person's feelings
     2. Shows genuine care and empathy
     3. Offers gentle insights and support
-    4. Encourages further exploration of emotions
+    4. Encourages further exploration of the query
     
     Please provide a JSON response with the following structure:
     {{
-        "emotionalTone": "A warm, empathetic description of the emotional tone",
-        "insights": "A caring and supportive insight about their emotional state",
-        "possibleReasons": ["A gentle exploration of possible reasons for their feelings"],
-        "suggestions": ["Supportive suggestions for emotional well-being"],
-        "followUpQuestions": ["Open-ended, caring questions to continue the conversation"]
+        "emotionalTone": "Tone of the user",
+        "insights": "An insight about the response",
+        "possibleReasons": ["Possible reasons for the answer"],
+        "suggestions": ["Supportive suggestions"],
+        "followUpQuestions": ["Open-ended questions to continue the conversation"]
     }}
     
-    Keep responses warm and conversational while maintaining professionalism. Ensure the response is valid JSON and follows this exact structure.
+    Ensure the response is valid JSON and follows this exact structure.
     """
     logger.debug(f"Generated prompt: {len(prompt)} characters")
 
