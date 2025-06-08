@@ -4,7 +4,7 @@ from datetime import datetime
 import uuid
 import os
 from dotenv import load_dotenv
-from services.ai_service import generate_response, suggest_topics
+from services.ai_service import generate_response, suggest_topics, generate_title
 from services.conversation_service import (
     create_conversation,
     get_conversation,
@@ -91,10 +91,20 @@ def add_message(conversation_id):
         }
     }
 
-    # Update conversation with both messages
-    update_conversation(conversation_id, {
-        "messages": conversation['messages'] + [user_message, ai_message]
-    })
+    # Update messages
+    updated_messages = conversation['messages'] + [user_message, ai_message]
+    
+    # After first back-and-forth, update the title
+    if len(updated_messages) >= 2:
+        new_title = generate_title(updated_messages)
+        update_conversation(conversation_id, {
+            "messages": updated_messages,
+            "title": new_title
+        })
+    else:
+        update_conversation(conversation_id, {
+            "messages": updated_messages
+        })
 
     return jsonify({
         "userMessage": user_message,

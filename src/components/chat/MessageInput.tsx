@@ -44,7 +44,14 @@ export default function MessageInput({ selectedFollowUp, onFollowUpClear, autoFo
     e.preventDefault();
     if (!message.trim() || isLoadingAiResponse || isCreatingConversation) return;
 
-    const messageContent = selectedFollowUp || message.trim();
+    const messageToSend = message.trim();
+    if (!messageToSend) return;
+    
+    // Combine message with follow-up context if present
+    const messageContent = selectedFollowUp 
+      ? `Regarding your question "${selectedFollowUp}": ${messageToSend}`
+      : messageToSend;
+    
     setMessage('');
     onFollowUpClear(); // Clear the selected follow-up
 

@@ -32,6 +32,38 @@ except Exception as e:
     logger.error(f"Failed to initialize Gemini model: {str(e)}")
     raise
 
+def generate_title(messages: List[Dict[str, Any]]) -> str:
+    """
+    Generate a title based on the conversation content.
+    """
+    if len(messages) < 2:  # Need at least one back-and-forth
+        return "New Chat"
+        
+    try:
+        # Use last 2 messages to understand context
+        history_text = "\n".join([
+            f"{msg['role'].capitalize()}: {msg['content']}"
+            for msg in messages[-2:]
+        ])
+        
+        prompt = f"""
+        Based on this conversation excerpt, generate a very short, clear title (2-5 words) that captures its main topic.
+        The title should be concise and descriptive, focusing on the key subject being discussed.
+
+        Conversation:
+        {history_text}
+
+        Generate only the title, no other text or formatting.
+        """
+        
+        response = model.generate_content(prompt)
+        title = response.text.strip().replace('"', '').replace("'", "")
+        return title[:50]  # Limit length
+        
+    except Exception as e:
+        logger.error(f"Error generating title: {str(e)}")
+        return "New Chat"
+
 def generate_response(message: str, conversation_history: List[Dict[str, Any]]) -> Dict[str, Any]:
     """
     Generate a response to the user's message and follow-up questions.
