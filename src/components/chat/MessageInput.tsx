@@ -17,9 +17,11 @@ export default function MessageInput({ selectedFollowUp, onFollowUpClear, autoFo
   const [isCreatingConversation, setIsCreatingConversation] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
+
+
   useEffect(() => {
-    // Focus when the component mounts, autoFocus is true, or activeConversationId changes
-    if (textareaRef.current && (autoFocus || activeConversationId)) {
+    // Focus when the component mounts, autoFocus is true, activeConversationId changes, or selectedFollowUp changes
+    if (textareaRef.current && (autoFocus || activeConversationId || selectedFollowUp)) {
       textareaRef.current.focus();
       // Scroll the textarea into view with smooth behavior
       textareaRef.current.scrollIntoView({ 
@@ -27,7 +29,7 @@ export default function MessageInput({ selectedFollowUp, onFollowUpClear, autoFo
         block: 'center'
       });
     }
-  }, [autoFocus, activeConversationId]);
+  }, [autoFocus, activeConversationId, selectedFollowUp]);
 
   const handleInput = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setMessage(e.target.value);
@@ -42,8 +44,9 @@ export default function MessageInput({ selectedFollowUp, onFollowUpClear, autoFo
     e.preventDefault();
     if (!message.trim() || isLoadingAiResponse || isCreatingConversation) return;
 
-    const messageContent = message.trim();
+    const messageContent = selectedFollowUp || message.trim();
     setMessage('');
+    onFollowUpClear(); // Clear the selected follow-up
 
     try {
       if (!activeConversationId) {
